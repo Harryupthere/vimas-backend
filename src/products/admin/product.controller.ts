@@ -6,10 +6,13 @@ import {
   Patch,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ProductsService } from '../products.service';
 import { UpdateProductDto } from '../dto/update-product.dto';
+import { JwtAuthGuard } from 'src/shared/auth/strategies/auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('admin')
 export class ProductsAdminController {
   constructor(private readonly productsService: ProductsService) {}

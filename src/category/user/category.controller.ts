@@ -6,9 +6,7 @@ export class CategoryUserController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @Get()
-  findAll() {
-    return this.categoryService.findAllNoPagination();
+  findAll(@Query('parent') parent?: number, @Query('search') search?: string) {
+    return this.categoryService.findAllNoPagination(parent, search);
   }
-
-  
 }

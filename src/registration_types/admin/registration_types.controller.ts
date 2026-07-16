@@ -1,20 +1,47 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  UseGuards,
+  Req,
+  Patch,
+  Query
+} from '@nestjs/common';
 import { RegistrationTypesService } from '../registration_types.service';
 import { CreateRegistrationTypeDto } from '../dto/create-registration-type.dto';
 import { UpdateRegistrationTypeDto } from '../dto/update-registration-type.dto';
+import { JwtAuthGuard } from 'src/shared/auth/strategies/auth.guard';
+import { Roles } from 'src/shared/auth/roles.decorator';
+import { RolesGuard } from 'src/shared/auth/roles.guard';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin') // allows admin OR merchant
 @Controller('admin/registration-types')
 export class RegistrationTypesController {
-  constructor(private readonly registrationTypesService: RegistrationTypesService) {}
+  constructor(
+    private readonly registrationTypesService: RegistrationTypesService,
+  ) {}
 
   @Post()
-  create(@Body() dto: CreateRegistrationTypeDto) {
-    return this.registrationTypesService.create(dto);
+  create(@Req() req, @Body() dto: CreateRegistrationTypeDto) {
+    return this.registrationTypesService.create(
+      dto,
+    );
   }
 
   @Get()
-  findAll() {
-    return this.registrationTypesService.findAll();
+  findAll(
+    @Query('page') pageStr: string = '1',
+    @Query('limit') limitStr: string = '10',
+    @Query('search') search: string,
+  ) {
+    const page = parseInt(pageStr);
+    const limit = parseInt(limitStr);
+    return this.registrationTypesService.findAll(page, limit, search);
   }
 
   @Get(':id')
@@ -22,13 +49,24 @@ export class RegistrationTypesController {
     return this.registrationTypesService.findOne(+id);
   }
 
-  @Put(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateRegistrationTypeDto) {
-    return this.registrationTypesService.update(+id, dto);
+  @Patch(':id')
+  update(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() dto: UpdateRegistrationTypeDto,
+  ) {
+    return this.registrationTypesService.update(
+
+      +id,
+      dto,
+    );
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.registrationTypesService.remove(+id);
+  remove(@Req() req, @Param('id') id: string) {
+    return this.registrationTypesService.remove(
+
+      +id,
+    );
   }
 }

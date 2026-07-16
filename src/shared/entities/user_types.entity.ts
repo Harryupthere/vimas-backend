@@ -8,8 +8,17 @@ export class UserType {
   @Column({ type: 'varchar', length: 100, nullable: false })
   name: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  // updated to TEXT for HTML content
+  @Column({ type: 'text', nullable: true })
   description?: string;
+
+  // added icon
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  icon?: string;
+
+  // added key_points as JSON
+  @Column({ type: 'json', nullable: true })
+  key_points?: string[]; // array of strings
 
   @Column({ type: 'tinyint', width: 1, default: 1, comment: '0=inactive, 1=active' })
   status: number;

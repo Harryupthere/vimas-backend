@@ -1,8 +1,22 @@
-import { Controller, Get, Param, Patch, Body, Post, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Body,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CategoryService } from '../category.service';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
+import { JwtAuthGuard } from 'src/shared/auth/strategies/auth.guard';
+import { Roles } from 'src/shared/auth/roles.decorator';
+import { RolesGuard } from 'src/shared/auth/roles.guard';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin') // allows admin OR merchant
 @Controller('admin')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
@@ -12,8 +26,9 @@ export class CategoryController {
   findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
   ) {
-    return this.categoryService.findAll(+page, +limit);
+    return this.categoryService.findAll(+page, +limit, search);
   }
 
   // GET single category by id

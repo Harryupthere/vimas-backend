@@ -4,12 +4,14 @@ import {
   Param,
   Body,
   Post,
+  Patch,
   UseGuards,
   Req,
   Query,
 } from '@nestjs/common';
 import { ProductsService } from '../products.service';
 import { CreateProductDto } from '../dto/create-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
 import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 
 @Controller('products')
@@ -39,6 +41,16 @@ export class ProductsUserController {
   @Get('merchant/:id')
   findOneMerchant(@Req() req, @Param('id') id: number) {
     return this.productsService.findOneProduct(req.user.id, id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('merchant/:id')
+  updateMerchant(
+    @Req() req,
+    @Param('id') id: number,
+    @Body() dto: UpdateProductDto,
+  ) {
+    return this.productsService.updateOwn(req.user.id, +id, dto);
   }
 
   // Buyer APIs

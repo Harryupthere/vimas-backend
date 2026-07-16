@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from '../shared/entities/products.entity';
@@ -6,6 +10,7 @@ import { User } from '../shared/entities/user.entity';
 
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductHistoryService } from '../product-history/product-history.service';
 
 @Injectable()
 export class ProductsService {
@@ -15,6 +20,8 @@ export class ProductsService {
 
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+
+    private readonly productHistoryService: ProductHistoryService,
   ) {}
 
   async create(id: number, dto: CreateProductDto) {
@@ -244,6 +251,8 @@ export class ProductsService {
   }
 
   async update(id: number, dto: UpdateProductDto) {
+    const existing = await this.productRepo.findOneBy({ id });
+
     const mappedDto: any = {
       ...dto,
       ...(dto.discountAvailable !== undefined && {
@@ -254,7 +263,31 @@ export class ProductsService {
     };
 
     await this.productRepo.update(id, mappedDto);
+
+    if (existing) {
+      await this.productHistoryService.record(
+        id,
+        'products',
+        existing,
+        mappedDto,
+      );
+    }
+
     return { message: 'Product updated successfully' };
+  }
+
+  // Merchant updating one of their own listed products (ownership-checked).
+  // UpdateProductDto never exposes `status`/`merchantId`, so a merchant can
+  // edit their listing's details but can't reassign it or flip its approval
+  // status themselves.
+  async updateOwn(merchantId: number, id: number, dto: UpdateProductDto) {
+    const product = await this.productRepo.findOne({ where: { id } });
+    if (!product) throw new NotFoundException('Product not found');
+    if (Number(product.merchantId) !== Number(merchantId)) {
+      throw new ForbiddenException('You are not the owner of this product');
+    }
+
+    return this.update(id, dto);
   }
 
   async remove(id: number) {

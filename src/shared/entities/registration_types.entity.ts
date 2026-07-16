@@ -11,6 +11,10 @@ export class RegistrationType {
   @Column({ type: 'varchar', length: 255, nullable: true })
   description?: string;
 
+  // added icon
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  icon?: string;
+
   @Column({ type: 'tinyint', width: 1, default: 1, comment: '0=inactive, 1=active' })
   status: number;
 

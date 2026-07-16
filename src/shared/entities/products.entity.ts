@@ -15,6 +15,9 @@ import { ProductMedia } from './product-media.entity';
 import { ProductAction } from './product-action.entity';
 import { ProductPaymentOption } from './product-payment-option.entity';
 import { Cart } from './cart.entity';
+import { Order } from './order.entity';
+import { ReviewRating } from './review-rating.entity';
+import { ProductHistory } from './product-history.entity';
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn('increment')
@@ -137,4 +140,13 @@ export class Product {
   // product.entity.ts
 @OneToMany(() => Cart, (cart) => cart.product)
 cartItems: Cart[];
+
+  @OneToMany(() => Order, (order) => order.product)
+  orders: Order[];
+
+  @OneToMany(() => ReviewRating, (review) => review.product)
+  reviews: ReviewRating[];
+
+  @OneToMany(() => ProductHistory, (history) => history.product)
+  history: ProductHistory[];
 }

@@ -4,6 +4,7 @@ import { BrandService } from '../brand.service';
 import { CreateBrandDto } from '../dto/create-brand.dto';
 import { UpdateBrandDto } from '../dto/updte-brand.dto';
 import { CreateCategoryBrandDto } from '../dto/category-brand.dto';
+
 @Controller('admin')
 export class BrandController {
   constructor(private readonly brandService: BrandService) {}

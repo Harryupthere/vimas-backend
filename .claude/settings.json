@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yarn add *)",
+      "Bash(yarn build *)",
+      "Bash(yarn test *)",
+      "Bash(node \"/private/tmp/claude-501/-Users-user-Desktop-Harry-vimas-backend/c9614754-f214-4fa9-8a8a-6bab8439e246/scratchpad/gen-postman.js\")",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

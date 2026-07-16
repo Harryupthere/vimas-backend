@@ -11,10 +11,17 @@ import {
 import { UserType } from './user_types.entity';
 import { RegistrationType } from './registration_types.entity';
 import { Product } from './products.entity';
+import { UserSession } from './user_session.entity';
+import { UserSessionStorage } from './user_session_storage.entity';
+import { ContactInfo } from './contact-info.entity';
+import { Order } from './order.entity';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
   id: number;
+
+  @Column({ type: 'varchar', length: 150, unique: true, nullable: false })
+  unique_user_id: string;
 
   @Column({ type: 'varchar', length: 100, nullable: false })
   first_name: string;
@@ -27,6 +34,9 @@ export class User {
 
   @Column({ type: 'varchar', length: 255, nullable: true, select: false })
   password: string;
+
+  @Column({ type: 'text', nullable: true, select: false })
+  refresh_token: string | null;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   telegram_id: string;
@@ -89,6 +99,24 @@ export class User {
   @UpdateDateColumn({ type: 'timestamp' })
   updated_at: Date;
 
+  // @Column({ type: 'varchar', length: 255, unique: true })
+  // unique_id: string; // New unique_id column
+
   @OneToMany(() => Product, (product) => product.merchant)
   products: Product[];
+
+  @OneToMany(() => UserSession, (session) => session.user)
+  sessions: UserSession[];
+
+  @OneToMany(() => UserSessionStorage, (session) => session.user)
+  sessionsStorage: UserSessionStorage[];
+
+  @OneToMany(() => ContactInfo, (contactInfo) => contactInfo.user)
+  contactInfos: ContactInfo[];
+
+  @OneToMany(() => Order, (order) => order.buyer)
+  ordersAsBuyer: Order[];
+
+  @OneToMany(() => Order, (order) => order.merchant)
+  ordersAsMerchant: Order[];
 }

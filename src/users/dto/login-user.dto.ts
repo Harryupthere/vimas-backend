@@ -1,7 +1,6 @@
 import { IsEmail, IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class LoginUserDto {
- 
   @IsOptional()
   //@IsEmail()
   email: string;
@@ -16,4 +15,16 @@ export class LoginUserDto {
 
   @IsNotEmpty()
   login_type: number;
+
+  @IsOptional()
+  @IsString()
+  ip?: string;
+
+  @IsOptional()
+  @IsString()
+  user_agent?: string;
+
+  @IsOptional()
+  @IsString()
+  device_id?: string;
 }

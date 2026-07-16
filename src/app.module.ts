@@ -14,6 +14,14 @@ import { ProductMediaModule } from './product-media/product-media.module';
 import { ProductActionsModule } from './product-action/product-action.module';
 import { ProductPaymentOptionModule } from './product-payment-option/product-payment-option.module';
 import { CartModule } from './cart/cart.module';
+import { AdminModule } from './admin/admin.module';
+import { StripeModule } from './stripe/stripe.module';
+import { ContactInfoModule } from './contact-info/contact-info.module';
+import { OrderStatusModule } from './order-status/order-status.module';
+import { PaymentStatusModule } from './payment-status/payment-status.module';
+import { OrdersModule } from './orders/orders.module';
+import { ReviewRatingModule } from './review-rating/review-rating.module';
+import { ProductHistoryModule } from './product-history/product-history.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -42,6 +50,14 @@ import { CartModule } from './cart/cart.module';
     PaymentOptionModule,
     ProductPaymentOptionModule,
     CartModule,
+    AdminModule,
+    StripeModule,
+    ContactInfoModule,
+    OrderStatusModule,
+    PaymentStatusModule,
+    OrdersModule,
+    ReviewRatingModule,
+    ProductHistoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

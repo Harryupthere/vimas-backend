@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsInt } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsInt, IsArray } from 'class-validator';
 
 export class CreateUserTypeDto {
   @IsNotEmpty()
@@ -12,4 +12,14 @@ export class CreateUserTypeDto {
   @IsOptional()
   @IsInt()
   status?: number;
+
+  @IsOptional()
+  @IsString()
+  icon?: string;
+
+  // accept an array of strings from client
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  key_points?: string[];
 }

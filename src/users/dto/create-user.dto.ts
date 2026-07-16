@@ -19,8 +19,7 @@ export class CreateUserDto {
   @Length(2, 100)
   last_name?: string;
 
-  //@IsEmail()
-  //@IsNotEmpty()
+  @IsString()
   email: string;
 
   @IsOptional()
@@ -59,4 +58,16 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsInt()
   registration_type_id: number;
+
+  @IsOptional()
+  @IsString()
+  ip?: string;
+
+  @IsOptional()
+  @IsString()
+  user_agent?: string;
+
+  @IsOptional()
+  @IsString()
+  device_id?: string;
 }

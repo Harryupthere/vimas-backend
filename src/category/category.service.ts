@@ -19,23 +19,64 @@ export class CategoryService {
     return { message: 'Category created successfully', data: category };
   }
 
-  // FIND ALL with pagination
-  async findAll(page = 1, limit = 10) {
-    const [data, total] = await this.categoryRepo.findAndCount({
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { id: 'DESC' },
-    });
+  // FIND ALL with pagination + optional search
+  async findAll(page = 1, limit = 10, search?: string) {
+    const qb = this.categoryRepo.createQueryBuilder('category');
+
+    // apply search if provided (searches name and description)
+    if (search && search.trim() !== '') {
+      const s = `%${search.trim()}%`;
+      qb.where('category.name LIKE :s OR category.description LIKE :s', { s });
+    }
+
+    qb.orderBy('category.id', 'DESC');
+    qb.skip((page - 1) * limit).take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
 
     return {
       data: {
         category: data,
-        page: page,
-        limit: limit,
+        page,
+        limit,
         total,
         total_pages: Math.ceil(total / limit),
       },
       message: 'categories',
+    };
+  }
+
+  // FIND ALL without pagination
+  async findAllNoPagination(parentId?: number, search?: string) {
+    const qb = this.categoryRepo.createQueryBuilder('category');
+
+    // filter by parentId if provided
+    if (parentId) {
+      qb.where('category.parent_id = :parentId', { parentId: +parentId });
+    }
+
+    // apply search if provided (searches name and description)
+    if (search && search.trim() !== '') {
+      const s = `%${search.trim()}%`;
+      if (parentId) {
+        qb.andWhere('(category.name LIKE :s )', {
+          s,
+        });
+      } else {
+        qb.where('(category.name LIKE :s )', {
+          s,
+        });
+      }
+    }
+
+    qb.orderBy('category.id', 'DESC');
+    const categories = await qb.getMany();
+    return {
+      data: categories,
+      message: parentId
+        ? 'Categories with the specified parent fetched successfully'
+        : 'All categories fetched successfully',
+      total: categories.length,
     };
   }
 
@@ -61,18 +102,5 @@ export class CategoryService {
     await this.categoryRepo.save(category);
 
     return { message: 'Category updated successfully', data: category };
-  }
-
-  // FIND ALL without pagination
-  async findAllNoPagination() {
-    const categories = await this.categoryRepo.find({
-      order: { id: 'DESC' },
-    });
-
-    return {
-      data: categories,
-      message: 'All categories fetched successfully',
-      total: categories.length,
-    };
   }
 }
