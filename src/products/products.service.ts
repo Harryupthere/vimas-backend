@@ -44,7 +44,9 @@ export class ProductsService {
       stockShow: dto.stockShow ? 1 : 0,
       labelShow: dto.labelShow ? 1 : 0,
       merchantId: user.id,
+      status:1
     });
+
 
     await this.productRepo.save(product);
     return { data: product, message: 'Product created successfully' };

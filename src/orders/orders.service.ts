@@ -15,6 +15,7 @@ import { StripeService } from '../stripe/stripe.service';
 import { CheckoutDto } from './dto/checkout.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { AdminUpdateOrderDto } from './dto/admin-update-order.dto';
+import { ConnectableObservable } from 'rxjs';
 
 const PENDING_PAYMENT_STATUS_ID = 1;
 const PAID_PAYMENT_STATUS_ID = 2;
@@ -103,7 +104,7 @@ export class OrdersService {
       });
     } catch (err) {
       await this.orderRepo.delete({ id: In(orderIds) });
-   
+
       throw new InternalServerErrorException(
         'Failed to create Stripe checkout session',
       );
@@ -121,8 +122,10 @@ export class OrdersService {
   }
 
   async handleStripeWebhook(rawBody: Buffer, signature: string) {
-    const event = this.stripeService.constructEvent(rawBody, signature);
+    console.log('===================== WEBHOOK =============');
 
+    const event = this.stripeService.constructEvent(rawBody, signature);
+    console.log(event.type);
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -282,7 +285,13 @@ export class OrdersService {
 
   async findAll(page: number, limit: number) {
     const [data, total] = await this.orderRepo.findAndCount({
-      relations: ['product', 'buyer', 'merchant', 'orderStatus', 'paymentStatus'],
+      relations: [
+        'product',
+        'buyer',
+        'merchant',
+        'orderStatus',
+        'paymentStatus',
+      ],
       order: { id: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
@@ -321,7 +330,8 @@ export class OrdersService {
     const order = await this.orderRepo.findOne({ where: { id } });
     if (!order) throw new NotFoundException('Order not found');
 
-    if (dto.orderStatusId !== undefined) order.orderStatusId = dto.orderStatusId;
+    if (dto.orderStatusId !== undefined)
+      order.orderStatusId = dto.orderStatusId;
     if (dto.paymentStatusId !== undefined)
       order.paymentStatusId = dto.paymentStatusId;
 
