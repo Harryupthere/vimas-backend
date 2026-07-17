@@ -103,7 +103,7 @@ export class OrdersService {
       });
     } catch (err) {
       await this.orderRepo.delete({ id: In(orderIds) });
-      console.log(err)
+   
       throw new InternalServerErrorException(
         'Failed to create Stripe checkout session',
       );
