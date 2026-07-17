@@ -19,7 +19,9 @@ export class OrdersWebhookController {
     @Req() req: Request,
     @Headers('stripe-signature') signature: string,
   ) {
+    console.log("Stripe called")
     if (!signature) {
+      console.log('Missing stripe-signature header')
       throw new BadRequestException('Missing stripe-signature header');
     }
     return this.ordersService.handleStripeWebhook(
