@@ -27,6 +27,8 @@ async function bootstrap() {
       'http://localhost:5174',
       'http://localhost:5173',
       'https://app.tradelive24.com',
+      'https://vimasgv.com',
+      'https://www.vimasgv.com',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
