@@ -9,12 +9,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Set global prefix
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/vimas');
 
   // Stripe webhook needs the raw, untouched request body to verify the
   // signature — it must never be parsed by the JSON body parser below.
   app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.originalUrl === '/api/v1/orders/webhook') {
+    if (req.originalUrl === '/api/vimas/orders/webhook') {
       bodyParser.raw({ type: 'application/json' })(req, res, next);
     } else {
       bodyParser.json()(req, res, next);
