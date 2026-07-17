@@ -22,22 +22,30 @@ import { PaymentStatusModule } from './payment-status/payment-status.module';
 import { OrdersModule } from './orders/orders.module';
 import { ReviewRatingModule } from './review-rating/review-rating.module';
 import { ProductHistoryModule } from './product-history/product-history.module';
+import { ConfigService } from '@nestjs/config';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true, // makes env variables available everywhere
+      envFilePath: '.env',
     }),
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: 'localhost',
-      port: 3306,
-      username: 'root',
-      //  password: null,
-      database: 'vimas',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      migrations: [__dirname + '/migrations/*{.ts,.js}'],
-      synchronize: false, // ⚠️ must be false in production if using migrations
-      migrationsRun: true, // automatically run migrations on app start
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'mysql',
+        host: configService.get<string>('DB_HOST'),
+        port: Number(configService.get<number>('DB_PORT')),
+        username: configService.get<string>('DB_USER'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_NAME'),
+
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        migrations: [__dirname + '/migrations/*{.ts,.js}'],
+
+        synchronize: false,
+        migrationsRun: true,
+      }),
     }),
     UsersModule,
     UserTypesModule,
