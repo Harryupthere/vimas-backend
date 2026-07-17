@@ -154,7 +154,7 @@ export class UsersService {
       );
 
       // build URL for frontend
-      const verifyUrl = `${process.env.APP_URL}/auth/verify-email?token=${token}`;
+      const verifyUrl = `${process.env.APP_URL}verify-email?token=${token}`;
       await this.emailService.sendEmail(
         savedUser.email,
         'Verify your email address',

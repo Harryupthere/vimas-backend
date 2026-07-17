@@ -80,4 +80,7 @@ export class CreateProductDto {
 
   // @IsNumber()
   // merchantId: number;
+    @IsOptional()
+  status?: string;
+
 }
