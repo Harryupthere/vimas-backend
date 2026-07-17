@@ -76,7 +76,7 @@ export class OrdersService {
 
     let session: Stripe.Checkout.Session;
     try {
-      const currency = process.env.STRIPE_CURRENCY || 'rm';
+      const currency = process.env.STRIPE_CURRENCY || 'myr';
       const appUrl = process.env.APP_URL || '';
 
       session = await this.stripeService.createCheckoutSession({
@@ -103,6 +103,7 @@ export class OrdersService {
       });
     } catch (err) {
       await this.orderRepo.delete({ id: In(orderIds) });
+      console.log(err)
       throw new InternalServerErrorException(
         'Failed to create Stripe checkout session',
       );
