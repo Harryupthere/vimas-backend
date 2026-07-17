@@ -99,8 +99,8 @@ export class OrdersService {
         payment_intent_data: {
           metadata: { orderIds: orderIds.join(',') },
         },
-        success_url: `${appUrl}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${appUrl}?checkout=cancel`,
+        success_url: `${appUrl}order-confirmation?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${appUrl}order-confirmation?checkout=cancel`,
       });
     } catch (err) {
       await this.orderRepo.delete({ id: In(orderIds) });
