@@ -24,9 +24,11 @@ async function bootstrap() {
 
   app.enableCors({
     origin: [
-      'http://localhost:5174',
       'http://localhost:5173',
+      'http://localhost:5174',
       'https://app.tradelive24.com',
+      'https://tradelive24.com',
+      'https://www.tradelive24.com',
       'https://vimasgv.com',
       'https://www.vimasgv.com',
     ],
