@@ -20,6 +20,7 @@ async function bootstrap() {
       bodyParser.json()(req, res, next);
     }
   });
+  
   app.use(bodyParser.urlencoded({ extended: true }));
 
   app.enableCors({
