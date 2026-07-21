@@ -195,6 +195,7 @@ export class OrdersService {
   // exactly like the webhook path would have.
   @Cron(CronExpression.EVERY_30_SECONDS)
   async reconcilePendingOrdersWithStripe(): Promise<void> {
+    console.log("Fecthing pending orders")
     if (this.isReconcilingPendingOrders) {
       this.logger.warn(
         'Previous pending-orders reconciliation run is still in progress, skipping this tick',
@@ -221,6 +222,7 @@ export class OrdersService {
       this.logger.log(
         `Reconciling ${sessionIds.length} pending Stripe session(s) against pending orders`,
       );
+    console.log( `Reconciling ${sessionIds.length} pending Stripe session(s) against pending orders`)
 
       for (const sessionId of sessionIds) {
         try {
@@ -267,6 +269,7 @@ export class OrdersService {
   // queue row or double-credit points.
   private async markPaidBySessionId(sessionId: string) {
     try {
+
       const pendingOrders = await this.orderRepo.find({
         where: {
           paymentGatewayId: sessionId,
