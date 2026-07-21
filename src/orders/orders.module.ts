@@ -11,10 +11,22 @@ import { OrdersService } from './orders.service';
 import { OrdersController } from './user/orders.controller';
 import { OrdersAdminController } from './admin/orders.controller';
 import { OrdersWebhookController } from './webhook/orders-webhook.controller';
+import { PointDistributionPurchaseQueue } from 'src/shared/entities/point-distribution-purchase-queue.entity';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, Cart, ContactInfo]),
+    TypeOrmModule.forFeature([
+      Order,
+      Cart,
+      ContactInfo,
+      PointDistributionPurchaseQueue,
+    ]),
+
+    BullModule.registerQueue({
+      name: 'point-distribution',
+    }),
+
     StripeModule,
     PassportModule,
     JwtModule.register({
@@ -23,6 +35,10 @@ import { OrdersWebhookController } from './webhook/orders-webhook.controller';
     }),
   ],
   providers: [OrdersService, JwtStrategy],
-  controllers: [OrdersController, OrdersAdminController, OrdersWebhookController],
+  controllers: [
+    OrdersController,
+    OrdersAdminController,
+    OrdersWebhookController,
+  ],
 })
 export class OrdersModule {}

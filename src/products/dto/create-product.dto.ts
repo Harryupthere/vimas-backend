@@ -60,6 +60,10 @@ export class CreateProductDto {
   stock: number;
 
   @IsOptional()
+  @IsNumber()
+  isOutOfStock: number;
+
+  @IsOptional()
   @IsBoolean()
   labelShow?: boolean;
 
@@ -80,7 +84,6 @@ export class CreateProductDto {
 
   // @IsNumber()
   // merchantId: number;
-    @IsOptional()
+  @IsOptional()
   status?: string;
-
 }

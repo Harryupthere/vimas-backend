@@ -5,7 +5,22 @@
       "Bash(yarn build *)",
       "Bash(yarn test *)",
       "Bash(node \"/private/tmp/claude-501/-Users-user-Desktop-Harry-vimas-backend/c9614754-f214-4fa9-8a8a-6bab8439e246/scratchpad/gen-postman.js\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(ls -la /private/tmp/claude-501/-Users-user-Desktop-Harry-vimas-backend/ 2>&1)",
+      "Read(//private/tmp/claude-501/-Users-user-Desktop-Harry-vimas-backend/**)",
+      "Bash(node \"/private/tmp/claude-501/-Users-user-Desktop-Harry-vimas-backend/c9614754-f214-4fa9-8a8a-6bab8439e246/scratchpad/add-downline-tree.js\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('Vimas-User.postman_collection.json'\\)\\); console.log\\('Valid JSON'\\)\")",
+      "Bash(mysql --version)",
+      "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SHOW COLUMNS FROM point_distribution_purchase_queue WHERE Field='stage';\")",
+      "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SELECT * FROM migrations ORDER BY id;\")",
+      "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SHOW COLUMNS FROM point_distribution_purchase_queue;\")",
+      "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SELECT id, user_id, order_id, quantity, total_points, remaining_points, status, stage, retry_count, error FROM point_distribution_purchase_queue WHERE id=3;\")",
+      "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SELECT * FROM point_user_balances WHERE user_id=4;\")",
+      "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SELECT id, wallet_type, wallet_id, transaction_type, transaction_reason, source_user_id, order_id, point_distribution_id, amount, created_at FROM point_transactions WHERE order_id=4 AND wallet_id=4 ORDER BY id;\")",
+      "Bash(mysql -h127.0.0.1 -uroot vimas -e ' *)",
+      "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SELECT id, wallet_id, amount FROM point_transactions WHERE order_id=4 AND wallet_id=4;\")",
+      "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SELECT id, status, stage, remaining_points, retry_count, error FROM point_distribution_purchase_queue WHERE id=3;\")",
+      "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SELECT id, status, stage, remaining_points, retry_count, error, processed_at FROM point_distribution_purchase_queue WHERE id=3;\")"
     ]
   }
 }

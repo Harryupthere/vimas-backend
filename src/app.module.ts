@@ -22,14 +22,30 @@ import { PaymentStatusModule } from './payment-status/payment-status.module';
 import { OrdersModule } from './orders/orders.module';
 import { ReviewRatingModule } from './review-rating/review-rating.module';
 import { ProductHistoryModule } from './product-history/product-history.module';
+import { PointDistributionModule } from './point-distribution/point-distribution.module';
+import { PointUserBalanceModule } from './point-user-balance/point-user-balance.module';
+import { PointAdminBalanceModule } from './point-admin-balance/point-admin-balance.module';
+import { PointPoolDetailModule } from './point-pool-detail/point-pool-detail.module';
+import { PointPoolModule } from './point-pool/point-pool.module';
+import { PointTransactionModule } from './point-transaction/point-transaction.module';
 import { ConfigService } from '@nestjs/config';
-
+import { BullModule } from '@nestjs/bull';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true, // makes env variables available everywhere
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST,
+        port: Number(process.env.REDIS_PORT),
+        password: process.env.REDIS_PASSWORD || undefined,
+      },
+    }),
+
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
@@ -66,6 +82,12 @@ import { ConfigService } from '@nestjs/config';
     OrdersModule,
     ReviewRatingModule,
     ProductHistoryModule,
+    PointDistributionModule,
+    PointUserBalanceModule,
+    PointAdminBalanceModule,
+    PointPoolDetailModule,
+    PointPoolModule,
+    PointTransactionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

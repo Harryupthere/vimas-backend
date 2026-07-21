@@ -15,6 +15,10 @@ export class StripeService {
     return this.stripe.checkout.sessions.create(params);
   }
 
+  retrieveCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session> {
+    return this.stripe.checkout.sessions.retrieve(sessionId);
+  }
+
   constructEvent(rawBody: Buffer, signature: string): Stripe.Event {
     return this.stripe.webhooks.constructEvent(
       rawBody,

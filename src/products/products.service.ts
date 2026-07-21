@@ -11,6 +11,7 @@ import { User } from '../shared/entities/user.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductHistoryService } from '../product-history/product-history.service';
+import { ProductAction } from 'src/shared/entities/product-action.entity';
 
 @Injectable()
 export class ProductsService {
@@ -20,6 +21,9 @@ export class ProductsService {
 
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+
+    @InjectRepository(ProductAction)
+    private readonly productActionRepo: Repository<ProductAction>,
 
     private readonly productHistoryService: ProductHistoryService,
   ) {}
@@ -44,9 +48,9 @@ export class ProductsService {
       stockShow: dto.stockShow ? 1 : 0,
       labelShow: dto.labelShow ? 1 : 0,
       merchantId: user.id,
-      status:1
+      isOutOfStock: 0,
+      status: 0,
     });
-
 
     await this.productRepo.save(product);
     return { data: product, message: 'Product created successfully' };
@@ -289,7 +293,19 @@ export class ProductsService {
       throw new ForbiddenException('You are not the owner of this product');
     }
 
-    return this.update(id, dto);
+    const productAction = await this.productActionRepo.findOne({
+      where: { product: { id } },
+    });
+
+    let updateDto = { ...dto };
+
+    // If product is inactive, merchant cannot change status
+    if (productAction?.currentStatus === 0) {
+      const { status, ...rest } = updateDto;
+      updateDto = rest;
+    }
+
+    return this.update(id, updateDto);
   }
 
   async remove(id: number) {

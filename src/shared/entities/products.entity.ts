@@ -18,6 +18,7 @@ import { Cart } from './cart.entity';
 import { Order } from './order.entity';
 import { ReviewRating } from './review-rating.entity';
 import { ProductHistory } from './product-history.entity';
+import { PointDistributionPurchaseQueue } from './point-distribution-purchase-queue.entity';
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn('increment')
@@ -76,6 +77,9 @@ export class Product {
 
   @Column({ name: 'stock', type: 'int', default: 0 })
   stock: number;
+
+  @Column({ name: 'is_out_of_stock', type: 'int', default: 0 })
+  isOutOfStock: number;
 
   @Column({ name: 'label_show', type: 'tinyint', default: 0 })
   labelShow: number;
@@ -138,8 +142,8 @@ export class Product {
   paymentOptions: ProductPaymentOption[];
 
   // product.entity.ts
-@OneToMany(() => Cart, (cart) => cart.product)
-cartItems: Cart[];
+  @OneToMany(() => Cart, (cart) => cart.product)
+  cartItems: Cart[];
 
   @OneToMany(() => Order, (order) => order.product)
   orders: Order[];
@@ -149,4 +153,7 @@ cartItems: Cart[];
 
   @OneToMany(() => ProductHistory, (history) => history.product)
   history: ProductHistory[];
+
+  @OneToMany(() => PointDistributionPurchaseQueue, (queue) => queue.product)
+  pointDistributionQueues: PointDistributionPurchaseQueue[];
 }

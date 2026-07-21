@@ -6,6 +6,8 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
+  OneToMany,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Product } from './products.entity';
@@ -13,7 +15,7 @@ import { ContactInfo } from './contact-info.entity';
 import { PaymentOption } from './payment-option.entity';
 import { PaymentStatus } from './payment-status.entity';
 import { OrderStatus } from './order-status.entity';
-
+import { PointDistributionPurchaseQueue } from './point-distribution-purchase-queue.entity';
 @Entity('orders')
 export class Order {
   @PrimaryGeneratedColumn('increment')
@@ -119,4 +121,7 @@ export class Order {
 
   @UpdateDateColumn({ type: 'datetime', name: 'last_update' })
   lastUpdate: Date;
+
+  @OneToOne(() => PointDistributionPurchaseQueue, (queue) => queue.order)
+  pointDistributionQueue: PointDistributionPurchaseQueue;
 }

@@ -1865,6 +1865,302 @@
           }
         }
       ]
+    },
+    {
+      "name": "Point Distribution",
+      "item": [
+        {
+          "name": "List Point Distribution Rules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/point-distribution?status=active",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "point-distribution"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active",
+                  "disabled": true
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get Point Distribution Rule",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/point-distribution/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "point-distribution",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Point Pool Details",
+      "item": [
+        {
+          "name": "List Point Pool Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/point-pool-detail?status=active",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "point-pool-detail"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active",
+                  "disabled": true
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get Point Pool Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/point-pool-detail/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "point-pool-detail",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Point Pools",
+      "item": [
+        {
+          "name": "List Point Pools",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/point-pool?page=1&limit=10&status=active",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "point-pool"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "disabled": true
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get Point Pool",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/point-pool/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "point-pool",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Point Balance",
+      "item": [
+        {
+          "name": "My Point Balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/point-user-balance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "point-user-balance"
+              ]
+            },
+            "description": "Lazily creates a zeroed balance row on first call if the buyer/merchant has none yet.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Point Transactions",
+      "item": [
+        {
+          "name": "My Point Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/point-transaction/my?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "point-transaction",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Downline Tree",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/point-transaction/my/downline-tree",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "point-transaction",
+                "my",
+                "downline-tree"
+              ]
+            },
+            "description": "Full referral downline tree. Each node shows earnedForMe (points earned directly from that member's own purchases) and subtreeTotal (earnedForMe + everyone below them). Response also includes a totalDownlineEarnings grand total.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Point Transaction",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/point-transaction/my/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "point-transaction",
+                "my",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }

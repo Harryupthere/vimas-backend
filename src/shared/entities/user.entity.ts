@@ -15,6 +15,8 @@ import { UserSession } from './user_session.entity';
 import { UserSessionStorage } from './user_session_storage.entity';
 import { ContactInfo } from './contact-info.entity';
 import { Order } from './order.entity';
+import { PointUserBalance } from './point-user-balance.entity';
+import { PointDistributionPurchaseQueue } from './point-distribution-purchase-queue.entity';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
@@ -119,4 +121,13 @@ export class User {
 
   @OneToMany(() => Order, (order) => order.merchant)
   ordersAsMerchant: Order[];
+
+  @OneToMany(
+    () => PointUserBalance,
+    (pointUserbalance) => pointUserbalance.user,
+  )
+  pointUserbalance: PointUserBalance[];
+
+  @OneToMany(() => PointDistributionPurchaseQueue, (queue) => queue.user)
+  pointDistributionQueues: PointDistributionPurchaseQueue[];
 }

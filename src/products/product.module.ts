@@ -6,9 +6,10 @@ import { ProductsAdminController } from './admin/product.controller';
 import { ProductsUserController } from './user/product.controller';
 import { User } from 'src/shared/entities/user.entity';
 import { ProductHistoryModule } from '../product-history/product-history.module';
+import { ProductAction } from 'src/shared/entities/product-action.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product, User]), ProductHistoryModule],
+  imports: [TypeOrmModule.forFeature([Product, User,ProductAction]), ProductHistoryModule],
   controllers: [ProductsAdminController, ProductsUserController],
   providers: [ProductsService],
   exports: [ProductsService],

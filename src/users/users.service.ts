@@ -22,6 +22,7 @@ import { UserSessionStorage } from '../shared/entities/user_session_storage.enti
 import { UserSession } from '../shared/entities/user_session.entity';
 import { v4 as uuidv4 } from 'uuid';
 import { EmailService } from 'src/email/email.service';
+import { PointUserBalance } from 'src/shared/entities/point-user-balance.entity';
 
 @Injectable()
 export class UsersService {
@@ -38,6 +39,8 @@ export class UsersService {
     private readonly userSessionRepo: Repository<UserSession>,
     @InjectRepository(UserSessionStorage)
     private readonly userSessionStorageRepo: Repository<UserSessionStorage>,
+    @InjectRepository(PointUserBalance)
+    private readonly pointUserBalancesRepo: Repository<PointUserBalance>,
     private readonly emailService: EmailService,
 
     private readonly jwtService: JwtService,
@@ -236,6 +239,22 @@ export class UsersService {
       //   await this.userSessionRepo.save(session);
 
       console.log('Direct login token:', access_token);
+
+      const isPointUserBalancePresent =
+        await this.pointUserBalancesRepo.findOne({
+          where: {
+            user: {
+              id: savedUser.id,
+            },
+          },
+        });
+
+      if (!isPointUserBalancePresent ) {
+        const pointUserBalances = {
+          userId: savedUser.id,
+        };
+        await this.pointUserBalancesRepo.save(pointUserBalances);
+      }
       message = 'Congratulations to be a part of Vimas.';
       data = {
         user: result,
@@ -460,6 +479,23 @@ export class UsersService {
     user.status = 1;
     user.email_verified = 1;
     await this.userRepo.save(user);
+    
+
+    const isPointUserBalancePresent = await this.pointUserBalancesRepo.findOne({
+      where: {
+        user: {
+          id: user.id,
+        },
+      },
+    });
+
+    if (!isPointUserBalancePresent) {
+      const pointUserBalances = {
+        userId: user.id,
+      };
+      await this.pointUserBalancesRepo.save(pointUserBalances);
+    }
+   
     return { data: {}, message: 'Email verification successful' };
   }
 

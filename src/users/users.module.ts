@@ -13,6 +13,8 @@ import { RegistrationType } from 'src/shared/entities/registration_types.entity'
 import { UserSessionStorage } from 'src/shared/entities/user_session_storage.entity';
 import { UserSession } from 'src/shared/entities/user_session.entity';
 import { EmailService } from 'src/email/email.service';
+import { PointUserBalance } from 'src/shared/entities/point-user-balance.entity';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -21,6 +23,7 @@ import { EmailService } from 'src/email/email.service';
       RegistrationType,
       UserSession,
       UserSessionStorage,
+      PointUserBalance,
     ]),
     PassportModule,
     JwtModule.register({
