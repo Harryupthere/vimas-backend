@@ -153,7 +153,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"harsh_buyer\",\n  \"password\": \"Passw0rd!\",\n  \"login_type\": 5\n}",
+              "raw": "{\n  \"username\": \"harsh_buyer\",\n  \"password\": \"Passw0rd!\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

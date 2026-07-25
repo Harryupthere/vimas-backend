@@ -360,12 +360,14 @@ export class UsersService {
   }
 
   async login(dto: LoginUserDto): Promise<any> {
-    const condition =
-      dto.login_type === 1 || dto.login_type === 2
-        ? { email: dto.email }
-        : dto.login_type === 5
-          ? { username: dto.username }
-          : { telegram_id: dto.telegram_id };
+    // Identify the user by whichever identifier was actually sent, rather
+    // than trusting login_type to say which one to use: username wins if
+    // present, then telegram_id (login_type 4), otherwise email.
+    const condition = dto.username
+      ? { username: dto.username }
+      : dto.login_type === 4
+        ? { telegram_id: dto.telegram_id }
+        : { email: dto.email };
 
     const user = await this.userRepo.findOne({
       where: condition,
@@ -400,8 +402,17 @@ export class UsersService {
       );
     }
 
-    // 4. Login type specific rules
-    if (dto.login_type === 1) {
+    // 4. Identifier specific rules
+    if (dto.username) {
+      // Username/password accounts have no email to verify.
+      if (!user.password) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+    } else if (dto.login_type === 1) {
       if (user.email_verified === 0) {
         throw new UnauthorizedException('Email not verified');
       }
@@ -417,21 +428,12 @@ export class UsersService {
       }
     }
 
-    if (dto.login_type === 4 && !user.telegram_id) {
+    if (!dto.username && dto.login_type === 4 && !user.telegram_id) {
       throw new UnauthorizedException('Telegram ID not linked');
     }
 
-    if (dto.login_type === 5) {
-      if (!user.password) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-      const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-      if (!isPasswordValid) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-    }
-
     if (
+      !dto.username &&
       (dto.login_type === 1 || dto.login_type === 2) &&
       user.registrationType?.id === 4
     ) {

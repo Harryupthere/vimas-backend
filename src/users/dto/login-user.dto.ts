@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsEmail, IsString, IsOptional } from 'class-validator';
 
 export class LoginUserDto {
   @IsOptional()
@@ -17,8 +17,8 @@ export class LoginUserDto {
   @IsOptional()
   username: string;
 
-  @IsNotEmpty()
-  login_type: number;
+  @IsOptional()
+  login_type?: number;
 
   @IsOptional()
   @IsString()
