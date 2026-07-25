@@ -71,6 +71,10 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto): Promise<{ data: any; message: string }> {
+    if (dto.username) {
+      return this.registerWithUsername(dto);
+    }
+
     const condition =
       dto.registration_type_id === 1 || dto.registration_type_id === 2
         ? { email: dto.email }
@@ -268,11 +272,100 @@ export class UsersService {
     };
   }
 
+  // Signup with just a username + password (+ optional referrer username).
+  // No email is required, so there is nothing to verify — the account is
+  // active immediately and the user completes their profile afterwards.
+  private async registerWithUsername(
+    dto: CreateUserDto,
+  ): Promise<{ data: any; message: string }> {
+    if (!dto.password) {
+      throw new BadRequestException('Password is required');
+    }
+
+    const existingUsername = await this.userRepo.findOne({
+      where: { username: dto.username },
+    });
+    if (existingUsername) {
+      throw new BadRequestException('Username already used');
+    }
+
+    let referralUser: User | null = null;
+    if (dto.referred_username) {
+      referralUser = await this.userRepo.findOne({
+        where: { username: dto.referred_username },
+      });
+      if (!referralUser) {
+        throw new BadRequestException('Referred username not found');
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    const userData: DeepPartial<User> = {
+      username: dto.username,
+      password: hashedPassword,
+      status: 1,
+      email_verified: 1,
+      unique_user_id: `VIMAS#${uuidv4()}`,
+    };
+    if (referralUser) {
+      userData.referral = referralUser;
+    }
+
+    const user = this.userRepo.create(userData);
+    const savedUser = await this.userRepo.save(user);
+
+    const { access_token, refresh_token } = await this.issueTokens(
+      savedUser.id,
+      {
+        sub_id: savedUser.id,
+        user_id: savedUser.username,
+        type: 'login',
+        role: 'user',
+      },
+    );
+
+    await this.userSessionRepo.delete({ user_id: savedUser.id });
+
+    const session = {
+      user: { id: savedUser.id } as any,
+      jwt_token: access_token,
+      device_id: dto.device_id || null,
+      ip_address: dto.ip || null,
+      user_agent: dto.user_agent || null,
+    } as unknown as UserSession;
+    await this.userSessionRepo.save(session);
+
+    const sessionStorage = {
+      user: { id: savedUser.id } as any,
+      device_id: dto.device_id || null,
+      ip_address: dto.ip || null,
+      user_agent: dto.user_agent || null,
+    } as unknown as UserSessionStorage;
+    await this.userSessionStorageRepo.save(sessionStorage);
+
+    const pointUserBalances = { userId: savedUser.id };
+    await this.pointUserBalancesRepo.save(pointUserBalances);
+
+    const { password, ...result } = savedUser as User;
+
+    return {
+      message: 'Congratulations to be a part of Vimas.',
+      data: {
+        user: result,
+        access_token,
+        refresh_token,
+      },
+    };
+  }
+
   async login(dto: LoginUserDto): Promise<any> {
     const condition =
       dto.login_type === 1 || dto.login_type === 2
         ? { email: dto.email }
-        : { telegram_id: dto.telegram_id };
+        : dto.login_type === 5
+          ? { username: dto.username }
+          : { telegram_id: dto.telegram_id };
 
     const user = await this.userRepo.findOne({
       where: condition,
@@ -280,6 +373,7 @@ export class UsersService {
         'id',
         'email',
         'telegram_id',
+        'username',
         'password',
         'first_name',
         'last_name',
@@ -312,7 +406,7 @@ export class UsersService {
         throw new UnauthorizedException('Email not verified');
       }
 
-      if (user.registrationType.id === 2 || user.password === null)
+      if (user.registrationType?.id === 2 || user.password === null)
         throw new UnauthorizedException(
           'Please login via google and then create password in your profile.',
         );
@@ -327,9 +421,19 @@ export class UsersService {
       throw new UnauthorizedException('Telegram ID not linked');
     }
 
+    if (dto.login_type === 5) {
+      if (!user.password) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+    }
+
     if (
       (dto.login_type === 1 || dto.login_type === 2) &&
-      user.registrationType.id === 4
+      user.registrationType?.id === 4
     ) {
       throw new UnauthorizedException(
         'Please login via telegram and verify your email to login with google or email.',
@@ -345,7 +449,7 @@ export class UsersService {
       ...result
     } = user;
     const payload = {
-      user_id: user.email ? user.email : user.telegram_id,
+      user_id: user.email || user.telegram_id || user.username,
       sub_id: user.id,
       type: 'login',
       role: 'user',
@@ -507,11 +611,15 @@ export class UsersService {
       .where('user.id = :id', { id })
       .select([
         'user.id',
+        'user.username',
         'user.email',
         'user.telegram_id',
         'user.first_name',
         'user.last_name',
         'user.phone_number',
+        'user.country',
+        'user.country_code',
+        'user.address',
         'user.status',
         'user.email_verified',
         'user.phone_number_verified',
@@ -531,22 +639,38 @@ export class UsersService {
   }
 
   async updateProfile(role: string, id: number, dto: UpdateProfileDto) {
-    const user = await this.findOne(id);
+    const user = await this.userRepo.findOne({
+      where: { id },
+      relations: ['registrationType', 'userType'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
     if (
-      ((user.registrationType.id === 1 || user.registrationType.id === 2) &&
+      ((user.registrationType?.id === 1 || user.registrationType?.id === 2) &&
         dto.email) ||
-      (user.registrationType.id === 4 && dto.telegram_id)
+      (user.registrationType?.id === 4 && dto.telegram_id)
     ) {
       throw new UnauthorizedException(
         'Can not change registration type entity',
       );
     }
 
+    if (dto.email) {
+      const existingEmail = await this.userRepo.findOne({
+        where: { email: dto.email },
+      });
+      if (existingEmail && existingEmail.id !== user.id) {
+        throw new BadRequestException('Email already in use');
+      }
+    }
+
     let message = 'Profile updated';
     if (
       user.email_verified === 0 &&
-      user.registrationType.id === 4 &&
+      user.registrationType?.id === 4 &&
       dto.email
     ) {
       // send email verififcation
@@ -571,6 +695,7 @@ export class UsersService {
     }
 
     Object.assign(user, dto); // only updates provided fields
+    await this.userRepo.save(user);
     return { message, data: {} };
   }
 
@@ -588,6 +713,7 @@ export class UsersService {
       .select([
         'user.id',
         'user.unique_user_id',
+        'user.username',
         'user.first_name',
         'user.last_name',
         'user.email',
@@ -595,6 +721,7 @@ export class UsersService {
         'user.phone_number',
         'user.country',
         'user.country_code',
+        'user.address',
         'user.profile',
         'user.email_verified',
         'user.phone_number_verified',
@@ -618,7 +745,7 @@ export class UsersService {
     if (search) {
       const s = `%${search}%`;
       query.andWhere(
-        '(user.first_name LIKE :s OR user.last_name LIKE :s OR user.email LIKE :s OR user.telegram_id LIKE :s OR user.phone_number LIKE :s OR user.country LIKE :s)',
+        '(user.first_name LIKE :s OR user.last_name LIKE :s OR user.username LIKE :s OR user.email LIKE :s OR user.telegram_id LIKE :s OR user.phone_number LIKE :s OR user.country LIKE :s)',
         { s },
       );
     }

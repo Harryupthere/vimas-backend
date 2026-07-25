@@ -13,6 +13,10 @@ export class LoginUserDto {
   @IsOptional()
   telegram_id: string;
 
+  @IsString()
+  @IsOptional()
+  username: string;
+
   @IsNotEmpty()
   login_type: number;
 

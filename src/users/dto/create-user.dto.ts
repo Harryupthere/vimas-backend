@@ -1,6 +1,4 @@
 import {
-  IsEmail,
-  IsNotEmpty,
   IsOptional,
   IsString,
   Length,
@@ -9,18 +7,19 @@ import {
 } from 'class-validator';
 
 export class CreateUserDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @Length(2, 100)
-  first_name: string;
+  first_name?: string;
 
   @IsOptional()
   @IsString()
   @Length(2, 100)
   last_name?: string;
 
+  @IsOptional()
   @IsString()
-  email: string;
+  email?: string;
 
   @IsOptional()
   @MinLength(6, { message: 'Password must be at least 6 characters long' })
@@ -29,6 +28,17 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   telegram_id?: string;
+
+  // Username/password registration
+  @IsOptional()
+  @IsString()
+  @Length(3, 100)
+  username?: string;
+
+  // Username of the user who referred this signup
+  @IsOptional()
+  @IsString()
+  referred_username?: string;
 
   @IsOptional()
   @IsString()
@@ -51,13 +61,17 @@ export class CreateUserDto {
   @IsInt()
   referral_id?: number;
 
-  @IsNotEmpty()
+    @IsOptional()
   @IsInt()
-  user_type_id: number;
+  referral_username?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsInt()
-  registration_type_id: number;
+  user_type_id?: number;
+
+  @IsOptional()
+  @IsInt()
+  registration_type_id?: number;
 
   @IsOptional()
   @IsString()

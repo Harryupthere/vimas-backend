@@ -25,13 +25,16 @@ export class User {
   @Column({ type: 'varchar', length: 150, unique: true, nullable: false })
   unique_user_id: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: false })
+  @Column({ type: 'varchar', length: 100, unique: true, nullable: true })
+  username: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
   first_name: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   last_name: string;
 
-  @Column({ type: 'varchar', length: 150, unique: true, nullable: false })
+  @Column({ type: 'varchar', length: 150, nullable: true })
   email: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true, select: false })
@@ -51,6 +54,9 @@ export class User {
 
   @Column({ type: 'varchar', length: 10, nullable: true })
   country_code: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  address: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   profile: string;

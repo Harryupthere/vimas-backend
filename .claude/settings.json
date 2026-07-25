@@ -20,7 +20,11 @@
       "Bash(mysql -h127.0.0.1 -uroot vimas -e ' *)",
       "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SELECT id, wallet_id, amount FROM point_transactions WHERE order_id=4 AND wallet_id=4;\")",
       "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SELECT id, status, stage, remaining_points, retry_count, error FROM point_distribution_purchase_queue WHERE id=3;\")",
-      "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SELECT id, status, stage, remaining_points, retry_count, error, processed_at FROM point_distribution_purchase_queue WHERE id=3;\")"
+      "Bash(mysql -h127.0.0.1 -uroot vimas -e \"SELECT id, status, stage, remaining_points, retry_count, error, processed_at FROM point_distribution_purchase_queue WHERE id=3;\")",
+      "Bash(python3 -c ' *)",
+      "Bash(npx tsc *)",
+      "Bash(python3 -c \"import json; json.load\\(open\\('postman/Vimas-User.postman_collection.json'\\)\\); print\\('valid json'\\)\")",
+      "Bash(git -C /Users/user/Desktop/Harry/vimas-backend diff --stat postman/)"
     ]
   }
 }

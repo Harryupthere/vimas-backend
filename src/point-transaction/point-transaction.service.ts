@@ -19,8 +19,8 @@ export interface DownlineTreeNode {
   subtreeTotal: number;
   children: DownlineTreeNode[];
   directReferralCount: number;
-  earnedFromOwnDownline:number;
-  earnedForMeDistribution:any;
+  earnedFromOwnDownline: number;
+  earnedForMeDistribution: any;
 }
 
 // Safety cap against pathological/cyclic referral data — not a business rule
@@ -499,9 +499,11 @@ export class PointTransactionService {
 
     let currentLevelIds = [userId];
 
+    const MAX_CLIENT_DOWNLINE_DEPTH = 2;
+
     for (
       let depth = 0;
-      depth < MAX_DOWNLINE_DEPTH && currentLevelIds.length;
+      depth < MAX_CLIENT_DOWNLINE_DEPTH && currentLevelIds.length;
       depth++
     ) {
       const children = await this.userRepo.find({
@@ -539,18 +541,18 @@ export class PointTransactionService {
      * ------------------------------------------------------------------
      */
 
-  const earningsBySourceUser = new Map<
-  number,
-  {
-    amount: number;
-    distribution: {
-      id: number;
-      name: string;
-      description: string;
-      symbol: string;
-    };
-  }
->();
+    const earningsBySourceUser = new Map<
+      number,
+      {
+        amount: number;
+        distribution: {
+          id: number;
+          name: string;
+          description: string;
+          symbol: string;
+        };
+      }
+    >();
 
     /**
      * ------------------------------------------------------------------
@@ -566,26 +568,26 @@ export class PointTransactionService {
     const earningsPairMap = new Map<string, number>();
 
     if (allDescendantIds.length) {
-     const rows = await this.pointTransactionRepo
-  .createQueryBuilder('t')
-  .leftJoin('t.pointDistribution', 'pd')
-  .select('t.source_user_id', 'sourceUserId')
-  .addSelect('t.receiver_user_id', 'receiverUserId')
-  .addSelect('SUM(t.amount)', 'total')
-  .addSelect('pd.id', 'distributionId')
-  .addSelect('pd.name', 'distributionName')
-  .addSelect('pd.description', 'distributionDescription')
-  .addSelect('pd.symbol', 'distributionSymbol')
-  .where('t.transaction_type = :type', {
-    type: PointTransactionType.CREDIT,
-  })
-  .andWhere('t.source_user_id IN (:...ids)', {
-    ids: allDescendantIds,
-  })
-  .groupBy('t.source_user_id')
-  .addGroupBy('t.receiver_user_id')
-  .addGroupBy('pd.id')
-  .getRawMany();
+      const rows = await this.pointTransactionRepo
+        .createQueryBuilder('t')
+        .leftJoin('t.pointDistribution', 'pd')
+        .select('t.source_user_id', 'sourceUserId')
+        .addSelect('t.receiver_user_id', 'receiverUserId')
+        .addSelect('SUM(t.amount)', 'total')
+        .addSelect('pd.id', 'distributionId')
+        .addSelect('pd.name', 'distributionName')
+        .addSelect('pd.description', 'distributionDescription')
+        .addSelect('pd.symbol', 'distributionSymbol')
+        .where('t.transaction_type = :type', {
+          type: PointTransactionType.CREDIT,
+        })
+        .andWhere('t.source_user_id IN (:...ids)', {
+          ids: allDescendantIds,
+        })
+        .groupBy('t.source_user_id')
+        .addGroupBy('t.receiver_user_id')
+        .addGroupBy('pd.id')
+        .getRawMany();
 
       for (const row of rows) {
         const sourceId = Number(row.sourceUserId);
@@ -595,35 +597,33 @@ export class PointTransactionService {
         earningsPairMap.set(`${sourceId}_${receiverId}`, total);
 
         if (receiverId === Number(userId)) {
-         earningsBySourceUser.set(sourceId, {
-  amount: total,
-  distribution: {
-    id: Number(row.distributionId),
-    name: row.distributionName,
-    description: row.distributionDescription,
-    symbol: row.distributionSymbol,
-  },
-});
+          earningsBySourceUser.set(sourceId, {
+            amount: total,
+            distribution: {
+              id: Number(row.distributionId),
+              name: row.distributionName,
+              description: row.distributionDescription,
+              symbol: row.distributionSymbol,
+            },
+          });
         }
       }
     }
 
-    const buildNode = (user: User): DownlineTreeNode => {
-      const children = (childrenByParent.get(Number(user.id)) ?? []).map((c) =>
-        buildNode(c),
-      );
+    const buildNode = (user: User, currentLevel: number): DownlineTreeNode => {
+      // Stop after 2 levels
+      const children =
+        currentLevel >= 2
+          ? []
+          : (childrenByParent.get(Number(user.id)) ?? []).map((c) =>
+              buildNode(c, currentLevel + 1),
+            );
 
-      const earnedData =
-  earningsBySourceUser.get(Number(user.id));
+      const earnedData = earningsBySourceUser.get(Number(user.id));
 
-const earnedForMe = earnedData?.amount ?? 0;
+      const earnedForMe = earnedData?.amount ?? 0;
 
-const earnedForMeDistribution =
-  earnedData?.distribution ?? null;
-
-      /**
-       * How much this user earned from THEIR own direct referrals
-       */
+      const earnedForMeDistribution = earnedData?.distribution ?? null;
 
       let earnedFromOwnDownline = 0;
 
@@ -640,20 +640,12 @@ const earnedForMeDistribution =
         uniqueUserId: user.unique_user_id,
         name: [user.first_name, user.last_name].filter(Boolean).join(' '),
 
-        /**
-         * Points this member generated for ME
-         */
         earnedForMe,
 
-         earnedForMeDistribution,
-        /**
-         * Points this member earned from THEIR own direct referrals
-         */
+        earnedForMeDistribution,
+
         earnedFromOwnDownline,
 
-        /**
-         * Total generated for ME by this entire subtree
-         */
         subtreeTotal,
 
         directReferralCount: children.length,
@@ -663,7 +655,7 @@ const earnedForMeDistribution =
     };
 
     const downline = (childrenByParent.get(Number(userId)) ?? []).map((c) =>
-      buildNode(c),
+      buildNode(c, 1),
     );
 
     const totalDownlineEarnings = downline.reduce(

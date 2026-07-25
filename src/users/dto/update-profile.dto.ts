@@ -1,9 +1,9 @@
 import { IsEmail, IsNotEmpty, IsString, IsOptional,  Length, } from 'class-validator';
 
 export class UpdateProfileDto {
- 
+
   @IsOptional()
-  //@IsEmail()
+  @IsEmail()
   email: string;
 
   @IsString()
@@ -20,6 +20,10 @@ export class UpdateProfileDto {
     @IsString()
   @IsOptional()
   country_code: string;
+
+    @IsString()
+  @IsOptional()
+  address: string;
 
     @IsOptional()
   @IsString()

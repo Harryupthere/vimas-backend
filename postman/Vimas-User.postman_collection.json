@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Vimas - User (Buyer & Merchant)",
-    "description": "Buyer and merchant-facing APIs for the Vimas e-commerce backend. Run \"Login\" first (or \"Register\" with registration_type_id=1 then verify email) to auto-populate {{token}} and {{refresh_token}}. Use \"Refresh Token\" once the access token expires instead of logging in again.",
+    "description": "Buyer and merchant-facing APIs for the Vimas e-commerce backend. Run \"Register\" (username + password, optionally referred_username) to create an account and auto-populate {{token}} and {{refresh_token}} \u2014 no email verification is required. Afterwards call \"Update Profile\" to add first/last name, email, address, country, and phone number. Use \"Login (Username)\" to sign back in, or \"Refresh Token\" once the access token expires.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -43,14 +43,36 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Harsh\",\n  \"last_name\": \"Chouhan\",\n  \"email\": \"harsh.buyer@example.com\",\n  \"password\": \"Passw0rd!\",\n  \"user_type_id\": 3,\n  \"registration_type_id\": 1\n}",
+              "raw": "{\n  \"username\": \"harsh_buyer\",\n  \"password\": \"Passw0rd!\",\n  \"referred_username\": \"existing_referrer_username\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Registering with username/password logs the user in immediately",
+                  "// (no email verification step), so save the tokens like Login does.",
+                  "const json = pm.response.json();",
+                  "const payload = json && json.data && json.data.data;",
+                  "if (payload && payload.access_token) {",
+                  "  pm.collectionVariables.set('token', payload.access_token);",
+                  "  console.log('Saved access token to collection variable');",
+                  "}",
+                  "if (payload && payload.refresh_token) {",
+                  "  pm.collectionVariables.set('refresh_token', payload.refresh_token);",
+                  "  console.log('Saved refresh token to collection variable');",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Login",
@@ -78,6 +100,60 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"harsh.buyer@example.com\",\n  \"password\": \"Passw0rd!\",\n  \"login_type\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const payload = json && json.data && json.data.data;",
+                  "if (payload && payload.access_token) {",
+                  "  pm.collectionVariables.set('token', payload.access_token);",
+                  "  console.log('Saved access token to collection variable');",
+                  "}",
+                  "if (payload && payload.refresh_token) {",
+                  "  pm.collectionVariables.set('refresh_token', payload.refresh_token);",
+                  "  console.log('Saved refresh token to collection variable');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (Username)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"harsh_buyer\",\n  \"password\": \"Passw0rd!\",\n  \"login_type\": 5\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -320,7 +396,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Harsh\",\n  \"last_name\": \"Chouhan\",\n  \"country\": \"India\"\n}",
+              "raw": "{\n  \"first_name\": \"Harsh\",\n  \"last_name\": \"Chouhan\",\n  \"email\": \"harsh.buyer@example.com\",\n  \"address\": \"221B Baker Street, Andheri East\",\n  \"country\": \"India\",\n  \"phone_number\": \"9876543210\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
