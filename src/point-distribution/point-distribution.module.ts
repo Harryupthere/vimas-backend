@@ -18,6 +18,7 @@ import { PointUserBalance } from '../shared/entities/point-user-balance.entity';
 import { PointAdminBalance } from '../shared/entities/point-admin-balance.entity';
 import { PointPool } from '../shared/entities/point-pool.entity';
 import { PointTransaction } from '../shared/entities/point-transaction.entity';
+import { Product } from '../shared/entities/products.entity';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { PointTransaction } from '../shared/entities/point-transaction.entity';
       PointAdminBalance,
       PointPool,
       PointTransaction,
+      Product,
     ]),
     BullModule.registerQueue({
       name: 'point-distribution',

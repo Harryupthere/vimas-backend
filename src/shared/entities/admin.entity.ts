@@ -17,6 +17,9 @@ export class Admin {
   @Column()
   password: string;
 
+    @Column()
+  refresh_token: string;
+
   @CreateDateColumn()
   created_at: Date;
 

@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Cart } from '../shared/entities/cart.entity';
+import { Cart, CartType } from '../shared/entities/cart.entity';
 import { AddToCartDto, UpdateCartDto } from './dto/cart.dto';
 import { Product } from '../shared/entities/products.entity';
 import { User } from '../shared/entities/user.entity';
@@ -22,25 +22,26 @@ export class CartService {
   async addToCart(buyerId: number, dto: AddToCartDto) {
     const product = await this.productRepo.findOne({
       where: { id: dto.productId },
-      relations: ['merchant'],
     });
     if (!product) throw new NotFoundException('Product not found');
-
-    if (product.merchant.id === buyerId) {
-      throw new BadRequestException('You cannot add your own product to cart');
-    }
 
     let cartItem = await this.cartRepo.findOne({
       where: { buyer: { id: buyerId }, product: { id: dto.productId } },
     });
 
+    const cartType = dto.cart_type ?? CartType.CONSUMER;
+
     if (cartItem) {
       cartItem.quantity += dto.quantity;
+      // let a later add-to-cart call switch the existing row's type
+      // (e.g. buyer re-adds the same product as a reseller)
+      cartItem.cart_type = cartType;
     } else {
       cartItem = this.cartRepo.create({
         buyer: { id: buyerId } as User,
         product,
         quantity: dto.quantity,
+        cart_type: cartType,
         price_snapshot: product.sellingPrice,
         discount_snapshot: product.discountAmount ?? 0,
       });

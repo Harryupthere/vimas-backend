@@ -6,6 +6,7 @@ import { JwtStrategy } from '../shared/auth/strategies/jwt.strategy';
 
 import { ProductMedia } from 'src/shared/entities/product-media.entity';
 import { ProductMediaController } from './user/product-media.controller';
+import { ProductMediaAdminController } from './admin/product-media.controller';
 import { ProductMediaService } from './product-media.service';
 import { Product } from 'src/shared/entities/products.entity';
 @Module({
@@ -17,7 +18,7 @@ import { Product } from 'src/shared/entities/products.entity';
       signOptions: { expiresIn: '1h' },
     }),
   ],
-  controllers: [ProductMediaController],
+  controllers: [ProductMediaController, ProductMediaAdminController],
   providers: [ProductMediaService, JwtStrategy],
 })
 export class ProductMediaModule {}

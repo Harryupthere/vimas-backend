@@ -28,12 +28,9 @@ export class Order {
   @JoinColumn({ name: 'buyer_id' })
   buyer: User;
 
-  @Column({ name: 'merchant_id', type: 'bigint' })
-  merchantId: number;
-
-  @ManyToOne(() => User, (user) => user.ordersAsMerchant)
-  @JoinColumn({ name: 'merchant_id' })
-  merchant: User;
+  // No merchant_id column — admin is the sole product owner now, so an
+  // order has no separate merchant to attribute (the buyer and the
+  // product are the only parties involved).
 
   @Column({ name: 'product_id', type: 'bigint' })
   productId: number;

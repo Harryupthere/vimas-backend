@@ -253,7 +253,10 @@ export class PointTransactionService {
                 colour: transaction.pointDistribution.colour,
                 eventType: transaction.pointDistribution.eventType,
                 receiverType: transaction.pointDistribution.receiverType,
-                points: transaction.pointDistribution.points,
+                // rule's configured share — the actual amount credited for
+                // this specific transaction is `amount` above
+                pointsPercentage:
+                  transaction.pointDistribution.pointsPercentage,
               }
             : null,
 

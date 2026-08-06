@@ -4,12 +4,21 @@ import { ProductsService } from './products.service';
 import { Product } from '../shared/entities/products.entity';
 import { ProductsAdminController } from './admin/product.controller';
 import { ProductsUserController } from './user/product.controller';
-import { User } from 'src/shared/entities/user.entity';
 import { ProductHistoryModule } from '../product-history/product-history.module';
-import { ProductAction } from 'src/shared/entities/product-action.entity';
+import { PointDistribution } from 'src/shared/entities/point-distribution.entity';
+import { ProductFeedback } from 'src/shared/entities/product-feedback.entity';
+import { ProductFeedbackLike } from 'src/shared/entities/product-feedback-like.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product, User,ProductAction]), ProductHistoryModule],
+  imports: [
+    TypeOrmModule.forFeature([
+      Product,
+      PointDistribution,
+      ProductFeedback,
+      ProductFeedbackLike,
+    ]),
+    ProductHistoryModule,
+  ],
   controllers: [ProductsAdminController, ProductsUserController],
   providers: [ProductsService],
   exports: [ProductsService],

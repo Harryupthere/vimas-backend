@@ -559,7 +559,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/products?page=1&limit=10",
+              "raw": "{{base_url}}/products?page=1&limit=10&type=",
               "host": [
                 "{{base_url}}"
               ],
@@ -576,6 +576,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "disabled": true
                 }
               ]
             },
@@ -588,7 +593,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": "type=reseller restricts results to bulk-purchasable products (bulk_available = 1). Omit (or any other value) to get the full catalog."
           }
         },
         {
@@ -597,13 +603,20 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/products/:id",
+              "raw": "{{base_url}}/products/:id?type=",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "products",
                 ":id"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "",
+                  "disabled": true
+                }
               ]
             },
             "auth": {
@@ -615,32 +628,29 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": "Response conditionally includes totalPoints (if the product's showTotalPoints is on) and pointsSharing \u2014 an array of { receiverType, pointsPercentage, points } for each active BUY_PRODUCT distribution rule \u2014 if showPointsSharing is on. type=reseller returns \"Product not found\" unless the product's bulk_available = 1."
           }
         }
       ]
     },
     {
-      "name": "Products (Merchant)",
+      "name": "Product Bulk Details",
       "item": [
         {
-          "name": "Create Product",
+          "name": "List Packages For Product",
           "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/products/merchant",
+              "raw": "{{base_url}}/product-bulk-details/product/:productId",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "products",
-                "merchant"
+                "product-bulk-details",
+                "product",
+                ":productId"
               ]
             },
             "auth": {
@@ -653,69 +663,23 @@
                 }
               ]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Wireless Bluetooth Headphones\",\n  \"subTitle\": \"Noise Cancelling Over-Ear\",\n  \"description\": \"High-quality wireless headphones with deep bass.\",\n  \"sellingPrice\": 4999,\n  \"stock\": 120,\n  \"categoryId\": 1,\n  \"brandId\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "Returns just id + packageQuantity + unitPrice per active package \u2014 enough to render a \"buy N units\" picker."
           }
         },
         {
-          "name": "List My Products",
+          "name": "Get Package Detail",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/products/merchant?page=1&limit=10",
+              "raw": "{{base_url}}/product-bulk-details/product/:productId/:id",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "products",
-                "merchant"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1",
-                  "disabled": false
-                },
-                {
-                  "key": "limit",
-                  "value": "10",
-                  "disabled": false
-                }
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get My Product",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/products/merchant/:id",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "products",
-                "merchant",
+                "product-bulk-details",
+                "product",
+                ":productId",
                 ":id"
               ]
             },
@@ -728,50 +692,8 @@
                   "type": "string"
                 }
               ]
-            }
-          }
-        },
-        {
-          "name": "Update My Product",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/products/merchant/:id",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "products",
-                "merchant",
-                ":id"
-              ]
             },
-            "description": "Ownership-checked: 403 if the product does not belong to the logged-in merchant. Cannot change status/category approval via this route.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"sellingPrice\": 4599,\n  \"stock\": 80,\n  \"discountAvailable\": true,\n  \"discountPercentage\": 8\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "Full product_bulk_details row for the package the buyer picked from the list above, scoped to that product."
           }
         }
       ]
@@ -779,46 +701,6 @@
     {
       "name": "Product Media",
       "item": [
-        {
-          "name": "Add Media",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/product-media",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "product-media"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"product_id\": 1,\n  \"media_url\": \"https://example.com/image.jpg\",\n  \"media_type\": \"image\",\n  \"sort_order\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
         {
           "name": "List Media For Product",
           "request": {
@@ -845,262 +727,12 @@
               ]
             }
           }
-        },
-        {
-          "name": "Update Media",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/product-media/:id",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "product-media",
-                ":id"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"media_url\": \"https://example.com/image-2.jpg\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "Remove Media",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/product-media/:id",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "product-media",
-                ":id"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Product Actions (Merchant)",
-      "item": [
-        {
-          "name": "Create Action",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/product-actions",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "product-actions"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"productId\": 1,\n  \"merchantRemarks\": [\n    \"Please approve my product\"\n  ]\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "Get Actions For Product",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/product-actions/product/:productId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "product-actions",
-                "product",
-                ":productId"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get My Actions",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/product-actions/my",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "product-actions",
-                "my"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Add Merchant Remarks",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/product-actions/:id/merchant-remarks",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "product-actions",
-                ":id",
-                "merchant-remarks"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"merchantRemarks\": [\n    \"Following up on my request\"\n  ]\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
         }
       ]
     },
     {
       "name": "Product Payment Option",
       "item": [
-        {
-          "name": "Attach Payment Option",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/product-payment-option",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "product-payment-option"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"product_id\": 1,\n  \"payment_option_id\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
         {
           "name": "Get Payment Options For Product",
           "request": {
@@ -1261,13 +893,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"productId\": 1,\n  \"quantity\": 1\n}",
+              "raw": "{\n  \"productId\": 1,\n  \"quantity\": 1,\n  \"cart_type\": \"consumer\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "cart_type is optional and defaults to \"consumer\" when omitted. Allowed values: consumer, reseller."
           }
         },
         {
@@ -1676,94 +1309,6 @@
                   "type": "string"
                 }
               ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Orders (Merchant)",
-      "item": [
-        {
-          "name": "My Product Orders",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/orders/merchant?page=1&limit=10",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "orders",
-                "merchant"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1",
-                  "disabled": false
-                },
-                {
-                  "key": "limit",
-                  "value": "10",
-                  "disabled": false
-                }
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update Order Status",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/orders/merchant/:id/status",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "orders",
-                "merchant",
-                ":id",
-                "status"
-              ]
-            },
-            "description": "1=Pending, 2=Confirmed, 3=Shipped, 4=Delivered, 5=Cancelled",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"orderStatusId\": 3\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           }
         }
@@ -2222,6 +1767,368 @@
                 "point-transaction",
                 "my",
                 ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "My Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dashboard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "dashboard"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Wallet snapshot, current-month earned/redeemed points, and REFERRAL_LEVEL_1/REFERRAL_LEVEL_2 reward counts + totals for the logged-in user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product Feedback",
+      "item": [
+        {
+          "name": "Create Feedback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/product-feedback",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-feedback"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": 1,\n  \"rating\": 5,\n  \"comment\": \"Great product, works as expected!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Omit rating (and set parentFeedbackId) to post a reply to another feedback/comment instead of a top-level review."
+          }
+        },
+        {
+          "name": "Reply To Feedback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/product-feedback",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-feedback"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": 1,\n  \"parentFeedbackId\": 1,\n  \"comment\": \"Thanks for the review!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List Feedback For Product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product-feedback/product/:productId?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-feedback",
+                "product",
+                ":productId"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Replies For Feedback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product-feedback/:id/replies?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-feedback",
+                ":id",
+                "replies"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Feedback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product-feedback/my?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-feedback",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update My Feedback",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/product-feedback/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-feedback",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Updated comment\",\n  \"rating\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete My Feedback",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product-feedback/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-feedback",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Soft-deletes (status becomes 'deleted') so replies/likes from other users are preserved."
+          }
+        },
+        {
+          "name": "Like Feedback",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product-feedback/:id/like",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-feedback",
+                ":id",
+                "like"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unlike Feedback",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product-feedback/:id/like",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-feedback",
+                ":id",
+                "like"
               ]
             },
             "auth": {

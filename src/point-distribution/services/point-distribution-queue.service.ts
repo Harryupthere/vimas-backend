@@ -25,6 +25,8 @@ import {
 } from 'src/shared/entities/point-transaction.entity';
 import { PointUserBalance } from 'src/shared/entities/point-user-balance.entity';
 import { PointAdminBalance } from 'src/shared/entities/point-admin-balance.entity';
+import { Product } from 'src/shared/entities/products.entity';
+import { calculateSharedPoints } from 'src/shared/utils/point-sharing.util';
 import { EntityManager, Repository } from 'typeorm';
 
 // Order in which a purchase moves through the pipeline. Used purely to
@@ -64,6 +66,8 @@ export class PointDistributionQueueService {
     private readonly pointDistributionRepo: Repository<PointDistribution>,
     @InjectRepository(Admin)
     private readonly adminRepo: Repository<Admin>,
+    @InjectRepository(Product)
+    private readonly productRepo: Repository<Product>,
   ) {}
 
   private readonly logger = new Logger(PointDistributionQueueService.name);
@@ -143,21 +147,46 @@ export class PointDistributionQueueService {
         );
 
       this.logger.debug(
-        `[${queueId}] Active rules: buyer=${buyerRule ? buyerRule.points : 'NONE'} pool=${poolRule ? poolRule.points : 'NONE'} uplines=${uplineRules.map((r) => `${r.receiverType}:${r.points}`).join(',') || 'NONE'}`,
+        `[${queueId}] Active rules (points_percentage): buyer=${buyerRule ? buyerRule.pointsPercentage : 'NONE'} pool=${poolRule ? poolRule.pointsPercentage : 'NONE'} uplines=${uplineRules.map((r) => `${r.receiverType}:${r.pointsPercentage}`).join(',') || 'NONE'}`,
       );
 
       const quantity = entry.quantity;
       const orderId = Number(entry.orderId);
       const productId = Number(entry.productId);
 
+      const product = await this.productRepo.findOne({
+        where: { id: productId },
+      });
+      if (!product) {
+        throw new Error(`Product ${productId} not found`);
+      }
+      // The pool of points a single unit of this product carries — each
+      // rule's points_percentage below carves its share out of this, not
+      // out of a flat per-rule points value anymore.
+      const totalPointsPerUnit = Number(product.totalPoints);
+
+      // Points-per-unit each receiver gets, derived once up front so the
+      // per-stage blocks below and the totalPoints sum use identical values.
+      const buyerPointsPerUnit = calculateSharedPoints(
+        totalPointsPerUnit,
+        Number(buyerRule?.pointsPercentage ?? 0),
+      );
+      const uplinePointsPerUnit = uplineRules.map((r) =>
+        calculateSharedPoints(totalPointsPerUnit, Number(r.pointsPercentage)),
+      );
+      const poolPointsPerUnit = calculateSharedPoints(
+        totalPointsPerUnit,
+        Number(poolRule?.pointsPercentage ?? 0),
+      );
+
       const totalPoints =
         quantity *
-        (Number(buyerRule?.points ?? 0) +
-          uplineRules.reduce((sum, r) => sum + Number(r.points), 0) +
-          Number(poolRule?.points ?? 0));
+        (buyerPointsPerUnit +
+          uplinePointsPerUnit.reduce((sum, p) => sum + p, 0) +
+          poolPointsPerUnit);
 
       this.logger.debug(
-        `[${queueId}] quantity=${quantity} totalPoints=${totalPoints} resumeFromStage=${resumeFromStage}`,
+        `[${queueId}] quantity=${quantity} productTotalPoints=${totalPointsPerUnit} totalPoints=${totalPoints} resumeFromStage=${resumeFromStage}`,
       );
 
       // Only set once, the first time this entry is ever processed — a
@@ -175,7 +204,7 @@ export class PointDistributionQueueService {
         this.stageIndex(PointDistributionPurchaseQueueStage.BUY_REWARD)
       ) {
         if (buyerRule) {
-          const amount = quantity * Number(buyerRule.points);
+          const amount = quantity * buyerPointsPerUnit;
           this.logger.debug(
             `[${queueId}] Crediting buyer reward: userId=${buyer.id} amount=${amount}`,
           );
@@ -250,7 +279,7 @@ export class PointDistributionQueueService {
           continue; // already credited on a previous attempt
         }
 
-        const amount = quantity * Number(rule.points);
+        const amount = quantity * uplinePointsPerUnit[i];
         const uplineUserId = uplineChain[i];
 
         if (uplineUserId) {
@@ -307,7 +336,7 @@ export class PointDistributionQueueService {
         this.stageIndex(PointDistributionPurchaseQueueStage.POOL_REWARD)
       ) {
         if (poolRule) {
-          const amount = quantity * Number(poolRule.points);
+          const amount = quantity * poolPointsPerUnit;
           this.logger.debug(`[${queueId}] Crediting pool: amount=${amount}`);
           await this.pointDistributionPurchaseQueueRepo.manager.transaction(
             async (manager) => {

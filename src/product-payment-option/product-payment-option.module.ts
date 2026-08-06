@@ -6,6 +6,7 @@ import { JwtStrategy } from '../shared/auth/strategies/jwt.strategy';
 
 import { ProductPaymentOption } from 'src/shared/entities/product-payment-option.entity';
 import { ProductPaymentOptionController } from './user/product-payment-option.controller';
+import { ProductPaymentOptionAdminController } from './admin/product-payment-option.controller';
 import { ProductPaymentOptionService } from './product-payment-option.service';
 import { Product } from 'src/shared/entities/products.entity';
 @Module({
@@ -17,7 +18,10 @@ import { Product } from 'src/shared/entities/products.entity';
       signOptions: { expiresIn: '1h' },
     }),
   ],
-  controllers: [ProductPaymentOptionController],
+  controllers: [
+    ProductPaymentOptionController,
+    ProductPaymentOptionAdminController,
+  ],
   providers: [ProductPaymentOptionService, JwtStrategy],
 })
 export class ProductPaymentOptionModule {}

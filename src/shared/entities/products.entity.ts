@@ -10,7 +10,6 @@ import {
 } from 'typeorm';
 import { Category } from './categories.entity';
 import { Brand } from './brand.entity';
-import { User } from './user.entity';
 import { ProductMedia } from './product-media.entity';
 import { ProductAction } from './product-action.entity';
 import { ProductPaymentOption } from './product-payment-option.entity';
@@ -72,6 +71,27 @@ export class Product {
   })
   discountPercentage: number;
 
+  // Total points (per unit) this product carries — the pool that gets
+  // split across buyer/upline/pool via each PointDistribution rule's
+  // points_percentage when the product is purchased.
+  @Column({
+    name: 'total_points',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  totalPoints: number;
+
+  // Buyer-facing visibility flags — whether the product page should show
+  // totalPoints, and whether it should show the per-receiver breakdown of
+  // how those points get shared.
+  @Column({ name: 'show_total_points', type: 'tinyint', default: 0 })
+  showTotalPoints: number;
+
+  @Column({ name: 'show_points_sharing', type: 'tinyint', default: 0 })
+  showPointsSharing: number;
+
   @Column({ name: 'stock_show', type: 'tinyint', default: 0 })
   stockShow: number;
 
@@ -96,9 +116,6 @@ export class Product {
   @Column({ name: 'brand_id', nullable: true })
   brandId: number;
 
-  @Column({ name: 'merchant_id' })
-  merchantId: number;
-
   @Column({ name: 'view_count', default: 0 })
   viewCount: number;
 
@@ -107,6 +124,11 @@ export class Product {
 
   @Column({ name: 'status', type: 'tinyint', default: 0 })
   status: number;
+
+  // Gates the reseller product listing — GET /products?type=reseller only
+  // returns products where this is 1 (see ProductsService.findAllProductsUsers).
+  @Column({ name: 'bulk_available', type: 'tinyint', default: 0 })
+  bulkAvailable: number;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -123,9 +145,8 @@ export class Product {
   @JoinColumn({ name: 'brand_id' })
   brand: Brand;
 
-  @ManyToOne(() => User, (user) => user.products)
-  @JoinColumn({ name: 'merchant_id' })
-  merchant: User;
+  // Admin is now the sole product creator/owner (no merchant-type users) —
+  // products has no merchant_id column anymore.
 
   @OneToMany(() => ProductMedia, (media) => media.product, {
     cascade: true,

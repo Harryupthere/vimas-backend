@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -17,7 +16,6 @@ import { Cart } from '../shared/entities/cart.entity';
 import { ContactInfo } from '../shared/entities/contact-info.entity';
 import { StripeService } from '../stripe/stripe.service';
 import { CheckoutDto } from './dto/checkout.dto';
-import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { AdminUpdateOrderDto } from './dto/admin-update-order.dto';
 import { PointDistributionPurchaseQueue } from '../shared/entities/point-distribution-purchase-queue.entity';
 const PENDING_PAYMENT_STATUS_ID = 1;
@@ -72,10 +70,12 @@ export class OrdersService {
       const unitPrice = Number(item.price_snapshot);
       const discount = Number(item.discount_snapshot || 0);
       const total = item.quantity * (unitPrice - discount);
+      if(item.quantity>9 && item.cart_type=='consumer'){
+      throw new NotFoundException('Consumer can only order 9 quantity of product. Please buy the product from Reseller page.');
+      }
 
       return this.orderRepo.create({
         buyerId,
-        merchantId: item.product.merchantId,
         productId: item.product.id,
         buyerContactDetailsId: contactInfo.id,
         paymentOptionId: dto.paymentOptionId ?? 1,
@@ -291,7 +291,7 @@ export class OrdersService {
 
       const jobs: PointDistributionPurchaseQueue[] = [];
       for (const order of pendingOrders) {
-        console.log(order)
+
         await this.cartRepo.delete({
           buyer: { id: order.buyerId },
           product: { id: order.productId },
@@ -380,56 +380,14 @@ export class OrdersService {
     return { data: order, message: 'Order' };
   }
 
-  async findMerchantOrders(merchantId: number, page: number, limit: number) {
-    const [data, total] = await this.orderRepo.findAndCount({
-      where: { merchantId },
-      relations: ['product', 'orderStatus', 'paymentStatus'],
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
-
-    return {
-      data: {
-        orders: data,
-        page,
-        limit,
-        total,
-        total_pages: Math.ceil(total / limit),
-      },
-      message: 'Orders fetched successfully',
-    };
-  }
-
-  async updateOrderStatus(
-    merchantId: number,
-    id: number,
-    dto: UpdateOrderStatusDto,
-  ) {
-    const order = await this.orderRepo.findOne({ where: { id } });
-    if (!order) throw new NotFoundException('Order not found');
-    if (Number(order.merchantId) !== Number(merchantId)) {
-      throw new ForbiddenException('You are not the merchant for this order');
-    }
-
-    order.orderStatusId = dto.orderStatusId;
-    await this.orderRepo.save(order);
-    return { data: order, message: 'Order status updated successfully' };
-  }
-
   async findAll(page: number, limit: number) {
     const [data, total] = await this.orderRepo.findAndCount({
-      relations: [
-        'product',
-        'buyer',
-        'merchant',
-        'orderStatus',
-        'paymentStatus',
-      ],
+      relations: ['product', 'buyer', 'orderStatus', 'paymentStatus'],
       order: { id: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
     });
+    
 
     return {
       data: {
@@ -449,7 +407,6 @@ export class OrdersService {
       relations: [
         'product',
         'buyer',
-        'merchant',
         'orderStatus',
         'paymentStatus',
         'paymentOption',

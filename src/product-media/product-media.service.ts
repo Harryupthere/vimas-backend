@@ -17,12 +17,13 @@ export class ProductMediaService {
     private readonly productRepo: Repository<Product>,
   ) {}
 
+  // Admin-managed — admin is the sole product owner now, so there's no
+  // ownership check, just "does this product exist".
   async create(
-    id: number,
     dto: CreateProductMediaDto,
   ): Promise<{ message: string; data: ProductMedia }> {
     const product = await this.productRepo.findOne({
-      where: { id: dto.product_id, merchantId: id },
+      where: { id: dto.product_id },
     });
     if (!product) throw new NotFoundException('Product not found');
 
@@ -40,17 +41,16 @@ export class ProductMediaService {
     });
   }
 
-  async update(
-    userId: number,
-    id: number,
-    dto: UpdateProductMediaDto,
-  ): Promise<any> {
-    const product = await this.productRepo.findOne({
-      where: { id: dto.product_id, merchantId: userId },
-    });
-    if (!product) throw new NotFoundException('Product not found');
+  async update(id: number, dto: UpdateProductMediaDto): Promise<any> {
     const media = await this.mediaRepo.findOne({ where: { id } });
     if (!media) throw new NotFoundException('Media not found');
+
+    if (dto.product_id) {
+      const product = await this.productRepo.findOne({
+        where: { id: dto.product_id },
+      });
+      if (!product) throw new NotFoundException('Product not found');
+    }
 
     Object.assign(media, dto);
     return {
@@ -59,16 +59,12 @@ export class ProductMediaService {
     };
   }
 
-  async remove(userId: number, id: number): Promise<any> {
-    const product = await this.productRepo.findOne({
-      where: { id: id, merchantId: userId },
-    });
-    if (!product) throw new NotFoundException('Product not found');
+  async remove(id: number): Promise<any> {
     const media = await this.mediaRepo.findOne({ where: { id } });
     if (!media) throw new NotFoundException('Media not found');
 
     return {
-      date: await this.mediaRepo.remove(media),
+      data: await this.mediaRepo.remove(media),
       message: 'Media removed successfully',
     };
   }

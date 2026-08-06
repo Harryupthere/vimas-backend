@@ -1,17 +1,22 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { Product } from '../shared/entities/products.entity';
-import { User } from '../shared/entities/user.entity';
+import {
+  PointDistribution,
+  PointDistributionStatus,
+  PointEventType,
+} from '../shared/entities/point-distribution.entity';
+import {
+  ProductFeedback,
+  ProductFeedbackStatus,
+} from '../shared/entities/product-feedback.entity';
+import { ProductFeedbackLike } from '../shared/entities/product-feedback-like.entity';
+import { calculateSharedPoints } from '../shared/utils/point-sharing.util';
 
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductHistoryService } from '../product-history/product-history.service';
-import { ProductAction } from 'src/shared/entities/product-action.entity';
 
 @Injectable()
 export class ProductsService {
@@ -19,38 +24,85 @@ export class ProductsService {
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
 
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
+    @InjectRepository(PointDistribution)
+    private readonly pointDistributionRepo: Repository<PointDistribution>,
 
-    @InjectRepository(ProductAction)
-    private readonly productActionRepo: Repository<ProductAction>,
+    @InjectRepository(ProductFeedback)
+    private readonly productFeedbackRepo: Repository<ProductFeedback>,
+
+    @InjectRepository(ProductFeedbackLike)
+    private readonly productFeedbackLikeRepo: Repository<ProductFeedbackLike>,
 
     private readonly productHistoryService: ProductHistoryService,
   ) {}
 
-  async create(id: number, dto: CreateProductDto) {
-    if (!id) {
-      return { message: 'User not found' };
-    }
-
-    const user = await this.userRepo.findOne({ where: { id: id } });
-
-    if (!user) {
-      return { message: 'User not found' };
-    }
-    // if(user.userType!==2){
-    //   return { message: 'Only merchants can create products' };
-    // }
-
-    const product = this.productRepo.create({
+  private buildProductEntity(dto: CreateProductDto) {
+    return this.productRepo.create({
       ...dto,
       discountAvailable: dto.discountAvailable ? 1 : 0,
       stockShow: dto.stockShow ? 1 : 0,
       labelShow: dto.labelShow ? 1 : 0,
-      merchantId: user.id,
+      showTotalPoints: dto.showTotalPoints ? 1 : 0,
+      showPointsSharing: dto.showPointsSharing ? 1 : 0,
+      bulkAvailable: dto.bulkAvailable ? 1 : 0,
       isOutOfStock: 0,
       status: 0,
     });
+  }
+
+  // Batch-loads top-level, active feedback (with its likes) for a set of
+  // products in 2 queries total, keyed by productId — used by both the
+  // list and single-product responses so a product listing never triggers
+  // N+1 feedback queries.
+  private async loadFeedbackByProduct(
+    productIds: number[],
+  ): Promise<Map<number, any[]>> {
+    const feedbackByProduct = new Map<number, any[]>();
+    if (!productIds.length) return feedbackByProduct;
+
+    const feedbackRows = await this.productFeedbackRepo.find({
+      where: {
+        productId: In(productIds),
+        parentFeedbackId: IsNull(),
+        status: ProductFeedbackStatus.ACTIVE,
+      },
+      relations: ['user'],
+      order: { id: 'DESC' },
+    });
+
+    const feedbackIds = feedbackRows.map((f) => f.id);
+    const likeRows = feedbackIds.length
+      ? await this.productFeedbackLikeRepo.find({
+          where: { feedbackId: In(feedbackIds) },
+          relations: ['user'],
+        })
+      : [];
+
+    const likesByFeedback = new Map<number, ProductFeedbackLike[]>();
+    for (const like of likeRows) {
+      const list = likesByFeedback.get(like.feedbackId) ?? [];
+      list.push(like);
+      likesByFeedback.set(like.feedbackId, list);
+    }
+
+    for (const feedback of feedbackRows) {
+      const enriched = {
+        ...feedback,
+        likes: likesByFeedback.get(feedback.id) ?? [],
+      };
+      const list = feedbackByProduct.get(feedback.productId) ?? [];
+      list.push(enriched);
+      feedbackByProduct.set(feedback.productId, list);
+    }
+
+    return feedbackByProduct;
+  }
+
+  // Admin adding a product directly — admin is the sole product creator now
+  // (no merchant-type users, no merchant_id column). Still starts
+  // unpublished (status 0); admin flips it live via update().
+  async createByAdmin(dto: CreateProductDto) {
+    const product = this.buildProductEntity(dto);
 
     await this.productRepo.save(product);
     return { data: product, message: 'Product created successfully' };
@@ -61,7 +113,6 @@ export class ProductsService {
       relations: [
         'category',
         'brand',
-        'merchant',
         'productMedia',
         'paymentOptions',
         'paymentOptions.paymentOption',
@@ -72,54 +123,43 @@ export class ProductsService {
 
     const total = await this.productRepo.count();
 
-    return {
-      data: { products, page, limit, total },
-      message: 'Products retrieved successfully',
-    };
-  }
-  async findAllProducts(id: number, page: number, limit: number) {
-    const products = await this.productRepo.find({
-      where: { merchantId: id },
-      relations: [
-        'category',
-        'brand',
-        'productMedia',
-        'paymentOptions',
-        'paymentOptions.paymentOption',
-        'cartItems', // ✅ include relation
-      ],
-      skip: (page - 1) * limit,
-      take: limit,
-    });
-
-    const total = await this.productRepo.count({ where: { merchantId: id } });
-
-    // Add cartCount field
-    const productsWithCartCount = products.map((product) => ({
-      ...product,
-      cartCount: product.cartItems ? product.cartItems.length : 0,
+    const feedbackByProduct = await this.loadFeedbackByProduct(
+      products.map((p) => p.id),
+    );
+    const productsWithFeedback = products.map((p) => ({
+      ...p,
+      feedback: feedbackByProduct.get(p.id) ?? [],
     }));
 
     return {
-      data: { products: productsWithCartCount, page, limit, total },
+      data: { products: productsWithFeedback, page, limit, total },
       message: 'Products retrieved successfully',
     };
   }
 
-  async findAllProductsUsers(page: number, limit: number) {
+  async findAllProductsUsers(page: number, limit: number, type?: string) {
     const query = this.productRepo
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
       .leftJoinAndSelect('product.brand', 'brand')
       .leftJoinAndSelect('product.productMedia', 'media')
       .leftJoinAndSelect('product.paymentOptions', 'paymentOptions')
-      .leftJoin('users', 'merchant', 'merchant.id = product.merchantId') // manual join with users table
-      .addSelect(['merchant.first_name']) // only fetch merchant name
       .where('product.status = :status', { status: 1 })
       .skip((page - 1) * limit)
       .take(limit);
 
+    // reseller listing — only bulk-purchasable products
+    if (type === 'reseller') {
+      query.andWhere('product.bulk_available = :bulkAvailable', {
+        bulkAvailable: 1,
+      });
+    }
+
     const [products, total] = await query.getManyAndCount();
+
+    const feedbackByProduct = await this.loadFeedbackByProduct(
+      products.map((p) => p.id),
+    );
 
     // Transform output
     const transformed = products.map((p) => {
@@ -140,7 +180,6 @@ export class ProductsService {
         category: p.category?.name,
         brand: p.brand?.name,
         media: p.productMedia,
-        by: (p as any).merchant?.first_name || 'Unknown', // since we joined users manually
         ...(p.stockShow ? { stock: p.stock } : {}),
         ...(p.labelShow
           ? { labelText: p.labelText, labelColor: p.labelColor }
@@ -148,6 +187,8 @@ export class ProductsService {
         sellingPrice: p.sellingPrice,
         viewCount: p.viewCount,
         likeCount: p.likeCount,
+        bulkAvailable: p.bulkAvailable,
+        feedback: feedbackByProduct.get(p.id) ?? [],
       };
     });
 
@@ -163,49 +204,37 @@ export class ProductsService {
       relations: [
         'category',
         'brand',
-        'merchant',
         'productMedia',
         'paymentOptions.paymentOption',
-      ],
-    });
-    return { data: product, message: 'Product retrieved successfully' };
-  }
-
-  async findOneProduct(userId: number, id: number) {
-    const product = await this.productRepo.findOne({
-      where: { id, merchantId: userId },
-      relations: [
-        'category',
-        'brand',
-        'productMedia',
-        'paymentOptions',
-        'paymentOptions.paymentOption',
-        'cartItems', // ✅ include relation
       ],
     });
 
     if (!product) {
-      return { message: 'Product not found' };
+      return { data: product, message: 'Product retrieved successfully' };
     }
 
-    return {
-      data: {
-        ...product,
-        cartCount: product.cartItems ? product.cartItems.length : 0,
-      },
-      message: 'Product retrieved successfully',
+    const feedbackByProduct = await this.loadFeedbackByProduct([product.id]);
+    const result = {
+      ...product,
+      feedback: feedbackByProduct.get(product.id) ?? [],
     };
+
+    return { data: result, message: 'Product retrieved successfully' };
   }
 
-  async findOneProductUsers(id: number) {
+  async findOneProductUsers(id: number, type?: string) {
     const product = await this.productRepo.findOne({
-      where: { id, status: 1 }, // only active products
+      where: {
+        id,
+        status: 1, // only active products
+        // reseller access — only bulk-purchasable products
+        ...(type === 'reseller' ? { bulkAvailable: 1 } : {}),
+      },
       relations: [
         'category',
         'brand',
         'productMedia',
         'paymentOptions.paymentOption',
-        'merchant',
       ],
     });
 
@@ -237,9 +266,9 @@ export class ProductsService {
       brand: product.brand?.name,
       media: product.productMedia || [],
       paymentOptions: product.paymentOptions || [],
-      by: (product as any).merchant?.first_name || 'Unknown', // fetch only merchant name
       viewCount: product.viewCount + 1,
       likeCount: product.likeCount,
+      bulkAvailable: product.bulkAvailable,
     };
 
     // Conditionally include stock
@@ -252,6 +281,37 @@ export class ProductsService {
       result.labelText = product.labelText;
       result.labelColor = product.labelColor;
     }
+
+    // Conditionally include the total points this product carries
+    if (product.showTotalPoints === 1) {
+      result.totalPoints = Number(product.totalPoints);
+    }
+
+    // Conditionally include the per-receiver breakdown of how those points
+    // get shared out (buyer/upline/pool) — same percentages the purchase
+    // queue actually credits with, via calculateSharedPoints.
+    if (product.showPointsSharing === 1) {
+      const activeRules = await this.pointDistributionRepo.find({
+        where: {
+          eventType: PointEventType.BUY_PRODUCT,
+          status: PointDistributionStatus.ACTIVE,
+        },
+        order: { priority: 'ASC' },
+      });
+
+      const totalPointsPerUnit = Number(product.totalPoints);
+      result.pointsSharing = activeRules.map((rule) => ({
+        receiverType: rule.receiverType,
+        pointsPercentage: Number(rule.pointsPercentage),
+        points: calculateSharedPoints(
+          totalPointsPerUnit,
+          Number(rule.pointsPercentage),
+        ),
+      }));
+    }
+
+    const feedbackByProduct = await this.loadFeedbackByProduct([product.id]);
+    result.feedback = feedbackByProduct.get(product.id) ?? [];
 
     return { data: result, message: 'Product retrieved successfully' };
   }
@@ -266,6 +326,15 @@ export class ProductsService {
       }),
       ...(dto.stockShow !== undefined && { stockShow: dto.stockShow ? 1 : 0 }),
       ...(dto.labelShow !== undefined && { labelShow: dto.labelShow ? 1 : 0 }),
+      ...(dto.showTotalPoints !== undefined && {
+        showTotalPoints: dto.showTotalPoints ? 1 : 0,
+      }),
+      ...(dto.showPointsSharing !== undefined && {
+        showPointsSharing: dto.showPointsSharing ? 1 : 0,
+      }),
+      ...(dto.bulkAvailable !== undefined && {
+        bulkAvailable: dto.bulkAvailable ? 1 : 0,
+      }),
     };
 
     await this.productRepo.update(id, mappedDto);
@@ -280,32 +349,6 @@ export class ProductsService {
     }
 
     return { message: 'Product updated successfully' };
-  }
-
-  // Merchant updating one of their own listed products (ownership-checked).
-  // UpdateProductDto never exposes `status`/`merchantId`, so a merchant can
-  // edit their listing's details but can't reassign it or flip its approval
-  // status themselves.
-  async updateOwn(merchantId: number, id: number, dto: UpdateProductDto) {
-    const product = await this.productRepo.findOne({ where: { id } });
-    if (!product) throw new NotFoundException('Product not found');
-    if (Number(product.merchantId) !== Number(merchantId)) {
-      throw new ForbiddenException('You are not the owner of this product');
-    }
-
-    const productAction = await this.productActionRepo.findOne({
-      where: { product: { id } },
-    });
-
-    let updateDto = { ...dto };
-
-    // If product is inactive, merchant cannot change status
-    if (productAction?.currentStatus === 0) {
-      const { status, ...rest } = updateDto;
-      updateDto = rest;
-    }
-
-    return this.update(id, updateDto);
   }
 
   async remove(id: number) {

@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   Min,
 } from 'class-validator';
 import {
@@ -36,8 +37,19 @@ export class CreatePointDistributionDto {
   @IsEnum(PointReceiverType)
   receiverType: PointReceiverType;
 
+  // Legacy flat points-per-unit value — no longer used by the distribution
+  // calculation, kept only for backward compatibility. Optional now that
+  // pointsPercentage drives the actual crediting.
+  @IsOptional()
   @IsNumber()
-  points: number;
+  points?: number;
+
+  // Share (0-100) of the purchased product's total_points this receiver
+  // gets. This is what the distribution queue actually uses.
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  pointsPercentage: number;
 
   @IsInt()
   @Min(1)

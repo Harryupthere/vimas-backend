@@ -9,8 +9,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { UserType } from './user_types.entity';
+import { MembershipType } from './membership-type.entity';
 import { RegistrationType } from './registration_types.entity';
-import { Product } from './products.entity';
 import { UserSession } from './user_session.entity';
 import { UserSessionStorage } from './user_session_storage.entity';
 import { ContactInfo } from './contact-info.entity';
@@ -79,6 +79,13 @@ export class User {
   @JoinColumn({ name: 'registration_type_id' })
   registrationType: RegistrationType;
 
+  // Relation with membership_types
+  @ManyToOne(() => MembershipType, (membershipType) => membershipType.id, {
+    eager: true,
+  })
+  @JoinColumn({ name: 'membership_type_id' })
+  membershipType: MembershipType;
+
   // ✅ New columns
   @Column({ type: 'tinyint', width: 1, default: 0 })
   email_verified: number;
@@ -110,9 +117,6 @@ export class User {
   // @Column({ type: 'varchar', length: 255, unique: true })
   // unique_id: string; // New unique_id column
 
-  @OneToMany(() => Product, (product) => product.merchant)
-  products: Product[];
-
   @OneToMany(() => UserSession, (session) => session.user)
   sessions: UserSession[];
 
@@ -124,9 +128,6 @@ export class User {
 
   @OneToMany(() => Order, (order) => order.buyer)
   ordersAsBuyer: Order[];
-
-  @OneToMany(() => Order, (order) => order.merchant)
-  ordersAsMerchant: Order[];
 
   @OneToMany(
     () => PointUserBalance,

@@ -4,6 +4,10 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserTypesModule } from './user_types/user_types.module';
+import { MembershipTypesModule } from './membership-types/membership-types.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { ProductFeedbackModule } from './product-feedback/product-feedback.module';
+import { ProductBulkDetailsModule } from './product-bulk-details/product-bulk-details.module';
 import { RegistrationTypesModule } from './registration_types/registration_types.module';
 import { ConfigModule } from '@nestjs/config';
 import { CategoryModule } from './category/category.module';
@@ -65,6 +69,10 @@ import { ScheduleModule } from '@nestjs/schedule';
     }),
     UsersModule,
     UserTypesModule,
+    MembershipTypesModule,
+    DashboardModule,
+    ProductFeedbackModule,
+    ProductBulkDetailsModule,
     RegistrationTypesModule,
     CategoryModule,
     BrandModule,

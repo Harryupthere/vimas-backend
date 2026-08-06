@@ -11,6 +11,11 @@ import {
 import { User } from './user.entity';
 import { Product } from './products.entity';
 
+export enum CartType {
+  CONSUMER = 'consumer',
+  RESELLER = 'reseller',
+}
+
 @Entity('cart')
 @Unique(['buyer', 'product'])
 export class Cart {
@@ -27,6 +32,9 @@ export class Cart {
 
   @Column()
   quantity: number;
+
+  @Column({ type: 'enum', enum: CartType, default: CartType.CONSUMER })
+  cart_type: CartType;
 
   @Column('decimal', { precision: 10, scale: 2 })
   price_snapshot: number;

@@ -1,74 +1,34 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Body,
-  Post,
-  Patch,
-  UseGuards,
-  Req,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Req, Query } from '@nestjs/common';
 import { ProductsService } from '../products.service';
-import { CreateProductDto } from '../dto/create-product.dto';
-import { UpdateProductDto } from '../dto/update-product.dto';
 import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 
 @Controller('products')
 export class ProductsUserController {
   constructor(private readonly productsService: ProductsService) {}
 
-  // Merchant APIs
-  @UseGuards(JwtAuthGuard)
-  @Post('merchant')
-  createMerchant(@Req() req, @Body() dto: CreateProductDto) {
-    return this.productsService.create(req.user.id, dto);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('merchant')
-  findAllMerchant(
-    @Query('page') pageStr: string = '1',
-    @Query('limit') limitStr: string = '10',
-    @Req() req,
-  ) {
-    const page = parseInt(pageStr);
-    const limit = parseInt(limitStr);
-    return this.productsService.findAllProducts(req.user.id, page, limit);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('merchant/:id')
-  findOneMerchant(@Req() req, @Param('id') id: number) {
-    return this.productsService.findOneProduct(req.user.id, id);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Patch('merchant/:id')
-  updateMerchant(
-    @Req() req,
-    @Param('id') id: number,
-    @Body() dto: UpdateProductDto,
-  ) {
-    return this.productsService.updateOwn(req.user.id, +id, dto);
-  }
-
-  // Buyer APIs
+  // Buyer APIs — admin is the sole product creator now (no merchant flow)
+  // type=reseller restricts results to bulk-purchasable products
+  // (bulk_available = 1); omitted/any other value returns the full catalog.
   @UseGuards(JwtAuthGuard)
   @Get()
   findAllUsers(
     @Query('page') pageStr: string = '1',
     @Query('limit') limitStr: string = '10',
+    @Query('type') type: string,
     @Req() req,
   ) {
     const page = parseInt(pageStr);
     const limit = parseInt(limitStr);
-    return this.productsService.findAllProductsUsers(page, limit);
+    return this.productsService.findAllProductsUsers(page, limit, type);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOneUser(@Req() req, @Param('id') id: number) {
-    return this.productsService.findOneProductUsers(id);
+  findOneUser(
+    @Req() req,
+    @Param('id') id: number,
+    @Query('type') type: string,
+  ) {
+    return this.productsService.findOneProductUsers(id, type);
   }
 }

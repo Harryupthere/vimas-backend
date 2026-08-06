@@ -2,6 +2,7 @@ import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { ChangePasswordAdminDto } from './changePassword.dto';
 import { LoginAdminDto } from './login.dto';
+import { RefreshTokenAdminDto } from './refresh-token.dto';
 import { JwtAuthGuard } from '../shared/auth/strategies/auth.guard';
 
 @Controller('admin')
@@ -12,6 +13,11 @@ export class AdminController {
   async login(@Body() loginDto: LoginAdminDto) {
     // TODO: Later you can return JWT instead of raw admin
     return await this.adminService.validateLogin(loginDto);
+  }
+
+  @Post('refresh-token')
+  async refreshToken(@Body() dto: RefreshTokenAdminDto) {
+    return await this.adminService.refreshToken(dto);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -12,7 +12,12 @@ import {
 } from '@nestjs/common';
 import { ProductActionsService } from '../product-action.service';
 import { AdminUpdateProductActionDto } from '../dto/admin-update-product-action.dto';
+import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
+import { Roles } from '../../shared/auth/roles.decorator';
+import { RolesGuard } from '../../shared/auth/roles.guard';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
 @Controller('admin/product-actions')
 export class ProductActionsAdminController {
   constructor(private readonly paService: ProductActionsService) {}

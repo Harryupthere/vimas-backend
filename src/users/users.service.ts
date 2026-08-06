@@ -193,7 +193,7 @@ export class UsersService {
           'is_admin_deleted',
           'is_self_deleted',
         ],
-        relations: ['registrationType', 'userType'],
+        relations: ['registrationType', 'userType', 'membershipType'],
       });
 
       if (!user) {
@@ -386,7 +386,7 @@ export class UsersService {
         'is_admin_deleted',
         'is_self_deleted',
       ],
-      relations: ['registrationType', 'userType'], // load registrationType relation
+      relations: ['registrationType', 'userType', 'membershipType'], // load registrationType relation
     });
 
     if (!user) {

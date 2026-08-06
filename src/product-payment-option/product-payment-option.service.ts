@@ -16,9 +16,11 @@ export class ProductPaymentOptionService {
     private readonly productRepo: Repository<Product>,
   ) {}
 
-  async create(id: number, dto: CreateProductPaymentOptionDto): Promise<any> {
+  // Admin-managed — admin is the sole product owner now, so there's no
+  // ownership check, just "does this product exist".
+  async create(dto: CreateProductPaymentOptionDto): Promise<any> {
     const product = await this.productRepo.findOne({
-      where: { id: dto.product_id, merchantId: id },
+      where: { id: dto.product_id },
     });
     if (!product) throw new NotFoundException('Product not found');
 

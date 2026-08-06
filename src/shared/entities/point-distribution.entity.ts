@@ -62,8 +62,22 @@ export class PointDistribution {
   })
   receiverType: PointReceiverType;
 
+  // Legacy flat points-per-unit value. Kept for backward compatibility, but
+  // the queue service no longer reads it — points are now derived from the
+  // purchased product's total_points times this rule's points_percentage.
   @Column({ type: 'decimal', precision: 18, scale: 4, default: 0 })
   points: number;
+
+  // Share of a product's total_points this receiver gets (0-100). Across the
+  // active rules for a given event_type these are expected to sum to <=100.
+  @Column({
+    name: 'points_percentage',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  pointsPercentage: number;
 
   @Column({ type: 'int', default: 1 })
   priority: number;

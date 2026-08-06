@@ -52,6 +52,20 @@ export class CreateProductDto {
   @IsNumber()
   discountPercentage?: number;
 
+  // Total points (per unit) this product carries for the points-sharing
+  // distribution (buyer/upline/pool split via PointDistribution rules).
+  @IsOptional()
+  @IsNumber()
+  totalPoints?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  showTotalPoints?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  showPointsSharing?: boolean;
+
   @IsOptional()
   @IsBoolean()
   stockShow?: number;
@@ -82,8 +96,11 @@ export class CreateProductDto {
   @IsNumber()
   brandId?: number;
 
-  // @IsNumber()
-  // merchantId: number;
   @IsOptional()
   status?: string;
+
+  // Gates the reseller listing (GET /products?type=reseller)
+  @IsOptional()
+  @IsBoolean()
+  bulkAvailable?: boolean;
 }
