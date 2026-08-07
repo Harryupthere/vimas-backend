@@ -27,7 +27,19 @@ export class ProductBulkDetailsService {
     if (!product) throw new NotFoundException('Product not found');
 
     try {
-      const bulkDetail = this.bulkDetailRepo.create(dto);
+      const { showTotalPoints, showPointsSharing, ...rest } = dto;
+      const bulkDetail = this.bulkDetailRepo.create({
+        ...rest,
+        // Both columns default to 1 (visible) in the DB — only override
+        // when the admin explicitly sent a value, so an omitted field
+        // doesn't get silently forced to 0.
+        ...(showTotalPoints !== undefined && {
+          showTotalPoints: showTotalPoints ? 1 : 0,
+        }),
+        ...(showPointsSharing !== undefined && {
+          showPointsSharing: showPointsSharing ? 1 : 0,
+        }),
+      });
       await this.bulkDetailRepo.save(bulkDetail);
       return {
         data: bulkDetail,
@@ -68,7 +80,16 @@ export class ProductBulkDetailsService {
     if (!bulkDetail)
       throw new NotFoundException('Product bulk detail not found');
 
-    Object.assign(bulkDetail, dto);
+    const { showTotalPoints, showPointsSharing, ...rest } = dto;
+    Object.assign(bulkDetail, {
+      ...rest,
+      ...(showTotalPoints !== undefined && {
+        showTotalPoints: showTotalPoints ? 1 : 0,
+      }),
+      ...(showPointsSharing !== undefined && {
+        showPointsSharing: showPointsSharing ? 1 : 0,
+      }),
+    });
     try {
       await this.bulkDetailRepo.save(bulkDetail);
     } catch (err: any) {

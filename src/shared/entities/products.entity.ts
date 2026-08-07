@@ -83,6 +83,40 @@ export class Product {
   })
   totalPoints: number;
 
+  // Per-cart-type order quantity bounds — enforced in CartService.addToCart
+  // against the cart line's quantity, based on the request's cart_type.
+  @Column({
+    name: 'consumer_minimum_quantity',
+    type: 'int',
+    unsigned: true,
+    default: 1,
+  })
+  consumerMinimumQuantity: number;
+
+  @Column({
+    name: 'consumer_maximum_quantity',
+    type: 'int',
+    unsigned: true,
+    default: 9,
+  })
+  consumerMaximumQuantity: number;
+
+  @Column({
+    name: 'reseller_minimum_quantity',
+    type: 'int',
+    unsigned: true,
+    default: 1,
+  })
+  resellerMinimumQuantity: number;
+
+  @Column({
+    name: 'reseller_maximum_quantity',
+    type: 'int',
+    unsigned: true,
+    default: 1,
+  })
+  resellerMaximumQuantity: number;
+
   // Buyer-facing visibility flags — whether the product page should show
   // totalPoints, and whether it should show the per-receiver breakdown of
   // how those points get shared.

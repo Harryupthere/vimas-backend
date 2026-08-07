@@ -335,6 +335,53 @@
       ]
     },
     {
+      "name": "Upload",
+      "item": [
+        {
+          "name": "Generate Presigned URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/upload/presigned-url",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "upload",
+                "presigned-url"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"product-image.jpg\",\n  \"fileType\": \"image/jpeg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Returns { uploadUrl, fileUrl }. PUT the raw file bytes directly to uploadUrl (with a matching Content-Type header, no auth) within 5 minutes \u2014 the presigned URL expires after that. fileUrl is the permanent CloudFront URL to store/display once the upload completes. Any authenticated user or admin token works \u2014 this endpoint isn't role-gated."
+          }
+        }
+      ]
+    },
+    {
       "name": "Profile",
       "item": [
         {
@@ -594,7 +641,7 @@
                 }
               ]
             },
-            "description": "type=reseller restricts results to bulk-purchasable products (bulk_available = 1). Omit (or any other value) to get the full catalog."
+            "description": "type=reseller restricts results to bulk-purchasable products (bulk_available = 1). Omit (or any other value) to get the full catalog. Points display: for consumer/default, each product includes totalPoints (if the product's showTotalPoints is on) and pointsSharing (if showPointsSharing is on) sourced from the product itself. For type=reseller, those same two fields instead come from EACH active bulk package under the product \u2014 returned as bulkPointsSharing: an array of { productBulkDetailsId, packageQuantity, totalPoints?, pointsSharing? }, one entry per package, each gated by that package's own showTotalPoints/showPointsSharing."
           }
         },
         {
@@ -629,7 +676,103 @@
                 }
               ]
             },
-            "description": "Response conditionally includes totalPoints (if the product's showTotalPoints is on) and pointsSharing \u2014 an array of { receiverType, pointsPercentage, points } for each active BUY_PRODUCT distribution rule \u2014 if showPointsSharing is on. type=reseller returns \"Product not found\" unless the product's bulk_available = 1."
+            "description": "Response conditionally includes totalPoints/pointsSharing \u2014 an array of { receiverType, pointsPercentage, points } for each active BUY_PRODUCT distribution rule \u2014 sourced from the product's own showTotalPoints/showPointsSharing for consumer/default requests. type=reseller returns \"Product not found\" unless the product's bulk_available = 1, and swaps those fields for bulkPointsSharing: one entry per active bulk package ( { productBulkDetailsId, packageQuantity, totalPoints?, pointsSharing? } ), each gated by that package's own showTotalPoints/showPointsSharing instead of the product's."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product Likes",
+      "item": [
+        {
+          "name": "Toggle Like",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product-likes/:productId/toggle",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-likes",
+                ":productId",
+                "toggle"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Likes the product if you haven't liked it yet, unlikes it if you have. Returns { liked, likeCount } \u2014 likeCount is recomputed from product_likes (COUNT), then written back to products.like_count."
+          }
+        },
+        {
+          "name": "Get Like Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product-likes/:productId/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-likes",
+                ":productId",
+                "status"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Returns whether you've liked this product plus the current likeCount."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product Views",
+      "item": [
+        {
+          "name": "Record View",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product-views/:productId",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-views",
+                ":productId"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Records a view for this product from the current user. Repeat views from the same user touch last_viewed_at rather than counting again, so view_count is unique-viewer count. GET /products/:id already calls this internally on every visit \u2014 this endpoint exists for cases where you want to record a view without fetching the full product payload (e.g. a carousel/quick-view widget)."
           }
         }
       ]
@@ -900,7 +1043,48 @@
                 }
               }
             },
-            "description": "cart_type is optional and defaults to \"consumer\" when omitted. Allowed values: consumer, reseller."
+            "description": "cart_type is optional and defaults to \"consumer\". consumer and reseller are separate rows for the same product \u2014 adding a reseller line for a product you already have as consumer creates a second row instead of merging quantities. quantity is checked against consumerMinimumQuantity/consumerMaximumQuantity (or resellerMinimumQuantity/resellerMaximumQuantity for reseller) \u2014 400 if outside those bounds. For cart_type=\"reseller\", productBulkDetailsId is required \u2014 see the \"Add To Cart (Reseller)\" request for how multiple packages of the same product are handled."
+          }
+        },
+        {
+          "name": "Add To Cart (Reseller)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cart",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cart"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": 1,\n  \"quantity\": 1,\n  \"cart_type\": \"reseller\",\n  \"productBulkDetailsId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Each distinct productBulkDetailsId is its own cart row \u2014 adding package #2 after already having package #1 in your cart creates a SECOND reseller row, it does not overwrite the first. Adding the same productBulkDetailsId again just increases that row's quantity. Either way, resellerMinimumQuantity/resellerMaximumQuantity bounds the TOTAL quantity across every reseller row you hold for this product (i.e. every package you've picked, counted together) \u2014 a package counts as \"quantity 1\" toward that cap regardless of how many units are physically inside it. productBulkDetailsId must reference an active product_bulk_details package for this exact product (see the Product Bulk Details folder)."
           }
         },
         {
@@ -935,13 +1119,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"quantity\": 2\n}",
+              "raw": "{\n  \"quantity\": 2,\n  \"cart_type\": \"reseller\",\n  \"productBulkDetailsId\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "cart_type disambiguates which of your rows for this product to update (defaults to \"consumer\"). For cart_type=\"reseller\", productBulkDetailsId is REQUIRED \u2014 it identifies which specific package's row to update, since a reseller product can have more than one row (one per package). quantity sets that row's value directly (not additive); it's validated against the same consumer/reseller min-max bounds as Add To Cart, applied to the TOTAL across all of your rows for this product+type, not just this one row."
           }
         },
         {
@@ -950,13 +1135,25 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/cart/:productId",
+              "raw": "{{base_url}}/cart/:productId?cart_type=&productBulkDetailsId=",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "cart",
                 ":productId"
+              ],
+              "query": [
+                {
+                  "key": "cart_type",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "productBulkDetailsId",
+                  "value": "",
+                  "disabled": true
+                }
               ]
             },
             "auth": {
@@ -968,7 +1165,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": "cart_type query param disambiguates which of your rows for this product to remove (defaults to \"consumer\"). For cart_type=reseller, productBulkDetailsId is REQUIRED \u2014 it identifies which specific package's row to remove, so removing one package doesn't wipe every reseller row you have for this product."
           }
         },
         {
@@ -994,7 +1192,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": "Returns every cart row for the buyer \u2014 one consumer row per product at most, and for reseller, one row per distinct bulk package picked (so the same product can appear multiple times as reseller rows, each with its own productBulkDetails)."
           }
         }
       ]
@@ -1488,6 +1687,286 @@
       ]
     },
     {
+      "name": "Reward Mall Categories",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reward-mall-categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reward-mall-categories"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reward-mall-categories/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reward-mall-categories",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reward Mall Products",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reward-mall-products?page=1&limit=10&categoryId=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reward-mall-products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Each product's isOutOfStock is true if either the admin flagged it out of stock, OR you (the requesting user) have already redeemed maximumQuantity of it \u2014 in that case purchasedQuantity/maxPurchaseReached explain why, so the frontend can hide/disable the buy button instead of showing a generic \"out of stock\"."
+          }
+        },
+        {
+          "name": "Get Product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reward-mall-products/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reward-mall-products",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Response includes currentPointsBalance and canAfford \u2014 an upfront preview of whether you have enough points, based on minimumQuantity. isOutOfStock is true if either the admin flagged it out of stock, OR you've already redeemed maximumQuantity of it (see purchasedQuantity/maxPurchaseReached) \u2014 canAfford factors this in too. The actual check happens again (authoritatively) when you call Redeem Product."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reward Mall Product Media",
+      "item": [
+        {
+          "name": "List Media For Product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reward-mall-product-media/:productId",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reward-mall-product-media",
+                ":productId"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reward Mall Purchases",
+      "item": [
+        {
+          "name": "Redeem Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reward-mall-purchases",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reward-mall-purchases"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rewardMallProductId\": 1,\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Debits pointPrice x quantity from your PointUserBalance. maximumQuantity is a per-user lifetime cap, not just a per-request bound \u2014 this sums every purchase you've already made of this reward and rejects (400) if this request would push you over the cap, even if this individual request's quantity is within bounds. Also 400 if you don't have enough points or the product is out of stock; 404 if the product doesn't exist or isn't active."
+          }
+        },
+        {
+          "name": "My Purchases",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reward-mall-purchases/my?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reward-mall-purchases",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Purchase",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reward-mall-purchases/my/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reward-mall-purchases",
+                "my",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Point Distribution",
       "item": [
         {
@@ -1810,7 +2289,7 @@
                 }
               ]
             },
-            "description": "Wallet snapshot, current-month earned/redeemed points, and REFERRAL_LEVEL_1/REFERRAL_LEVEL_2 reward counts + totals for the logged-in user."
+            "description": "Wallet snapshot, current-month earned/redeemed points, REFERRAL_LEVEL_1/REFERRAL_LEVEL_2 reward counts + totals, and trend \u2014 the last 6 calendar months (oldest first, including the current in-progress month) as [{ m, purchases, points }]: m is the month abbreviation (e.g. \"Feb\"), purchases is the count of this buyer's paid orders (payment_status_id = 2) that month, points is the sum of points credited to their wallet that month. Months with no activity come back as 0, not omitted, so the array is always 6 entries long."
           }
         }
       ]

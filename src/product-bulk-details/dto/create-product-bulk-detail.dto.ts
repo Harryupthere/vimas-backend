@@ -1,4 +1,4 @@
-import { IsInt, IsNumber, IsOptional, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class CreateProductBulkDetailDto {
   @IsInt()
@@ -41,6 +41,14 @@ export class CreateProductBulkDetailDto {
   @IsNumber()
   @Min(0)
   totalPoints?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  showTotalPoints?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  showPointsSharing?: boolean;
 
   @IsOptional()
   @IsInt()

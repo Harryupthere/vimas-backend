@@ -12,11 +12,13 @@ import {
   ProductFeedbackStatus,
 } from '../shared/entities/product-feedback.entity';
 import { ProductFeedbackLike } from '../shared/entities/product-feedback-like.entity';
+import { ProductBulkDetail } from '../shared/entities/product-bulk-detail.entity';
 import { calculateSharedPoints } from '../shared/utils/point-sharing.util';
 
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductHistoryService } from '../product-history/product-history.service';
+import { ProductViewsService } from '../product-views/product-views.service';
 
 @Injectable()
 export class ProductsService {
@@ -33,7 +35,11 @@ export class ProductsService {
     @InjectRepository(ProductFeedbackLike)
     private readonly productFeedbackLikeRepo: Repository<ProductFeedbackLike>,
 
+    @InjectRepository(ProductBulkDetail)
+    private readonly bulkDetailRepo: Repository<ProductBulkDetail>,
+
     private readonly productHistoryService: ProductHistoryService,
+    private readonly productViewsService: ProductViewsService,
   ) {}
 
   private buildProductEntity(dto: CreateProductDto) {
@@ -96,6 +102,82 @@ export class ProductsService {
     }
 
     return feedbackByProduct;
+  }
+
+  private async getActivePointDistributionRules() {
+    return this.pointDistributionRepo.find({
+      where: {
+        eventType: PointEventType.BUY_PRODUCT,
+        status: PointDistributionStatus.ACTIVE,
+      },
+      order: { priority: 'ASC' },
+    });
+  }
+
+  // Shared by both the product-level (consumer) and bulk-detail-level
+  // (reseller) points display — same "show flag gates the field" rule,
+  // just fed a different totalPoints/show* source depending on caller.
+  private buildPointsInfo(
+    showTotalPoints: number,
+    showPointsSharing: number,
+    totalPoints: number,
+    activeRules: PointDistribution[],
+  ): { totalPoints?: number; pointsSharing?: any[] } {
+    const info: { totalPoints?: number; pointsSharing?: any[] } = {};
+
+    if (showTotalPoints === 1) {
+      info.totalPoints = Number(totalPoints);
+    }
+
+    if (showPointsSharing === 1) {
+      const totalPointsPerUnit = Number(totalPoints);
+      info.pointsSharing = activeRules.map((rule) => ({
+        receiverType: rule.receiverType,
+        pointsPercentage: Number(rule.pointsPercentage),
+        points: calculateSharedPoints(
+          totalPointsPerUnit,
+          Number(rule.pointsPercentage),
+        ),
+      }));
+    }
+
+    return info;
+  }
+
+  // Reseller variant of buildPointsInfo — same show-flag logic, but sourced
+  // per bulk package (product_bulk_details.show_total_points/
+  // show_points_sharing/total_points) instead of the parent product's
+  // columns, since a reseller buys via a specific package. Batches every
+  // active package for the given products in one query, keyed by productId.
+  private async loadBulkPointsSharingByProduct(
+    productIds: number[],
+    activeRules: PointDistribution[],
+  ): Promise<Map<number, any[]>> {
+    const byProduct = new Map<number, any[]>();
+    if (!productIds.length) return byProduct;
+
+    const bulkDetails = await this.bulkDetailRepo.find({
+      where: { productId: In(productIds), status: 1 },
+      order: { sortOrder: 'ASC' },
+    });
+
+    for (const bulkDetail of bulkDetails) {
+      const entry = {
+        productBulkDetailsId: bulkDetail.id,
+        packageQuantity: bulkDetail.packageQuantity,
+        ...this.buildPointsInfo(
+          bulkDetail.showTotalPoints,
+          bulkDetail.showPointsSharing,
+          bulkDetail.totalPoints,
+          activeRules,
+        ),
+      };
+      const list = byProduct.get(bulkDetail.productId) ?? [];
+      list.push(entry);
+      byProduct.set(bulkDetail.productId, list);
+    }
+
+    return byProduct;
   }
 
   // Admin adding a product directly — admin is the sole product creator now
@@ -161,6 +243,19 @@ export class ProductsService {
       products.map((p) => p.id),
     );
 
+    // Consumer/default: totalPoints/pointsSharing come from the product's
+    // own show_total_points/show_points_sharing. Reseller: the same fields
+    // instead come from each active bulk package under this product (a
+    // reseller buys via a specific package, which can set its own values).
+    const activeRules = await this.getActivePointDistributionRules();
+    const bulkPointsSharingByProduct =
+      type === 'reseller'
+        ? await this.loadBulkPointsSharingByProduct(
+            products.map((p) => p.id),
+            activeRules,
+          )
+        : new Map<number, any[]>();
+
     // Transform output
     const transformed = products.map((p) => {
       return {
@@ -188,6 +283,18 @@ export class ProductsService {
         viewCount: p.viewCount,
         likeCount: p.likeCount,
         bulkAvailable: p.bulkAvailable,
+        consumerMinimumQuantity: p.consumerMinimumQuantity,
+        consumerMaximumQuantity: p.consumerMaximumQuantity,
+        resellerMinimumQuantity: p.resellerMinimumQuantity,
+        resellerMaximumQuantity: p.resellerMaximumQuantity,
+        ...(type === 'reseller'
+          ? { bulkPointsSharing: bulkPointsSharingByProduct.get(p.id) ?? [] }
+          : this.buildPointsInfo(
+              p.showTotalPoints,
+              p.showPointsSharing,
+              p.totalPoints,
+              activeRules,
+            )),
         feedback: feedbackByProduct.get(p.id) ?? [],
       };
     });
@@ -222,7 +329,7 @@ export class ProductsService {
     return { data: result, message: 'Product retrieved successfully' };
   }
 
-  async findOneProductUsers(id: number, type?: string) {
+  async findOneProductUsers(id: number, userId: number, type?: string) {
     const product = await this.productRepo.findOne({
       where: {
         id,
@@ -242,10 +349,12 @@ export class ProductsService {
       return { message: 'Product not found' };
     }
 
-    // Update view count
-    await this.productRepo.update(id, {
-      viewCount: (product.viewCount || 0) + 1,
-    });
+    // Visiting the detail page counts as a view — recorded through the same
+    // product_views-backed path as the dedicated POST /product-views/:id
+    // endpoint, so view_count is always unique-viewer count either way.
+    const {
+      data: { viewCount },
+    } = await this.productViewsService.recordView(userId, id);
 
     // Format response for buyers
     const result: any = {
@@ -266,9 +375,13 @@ export class ProductsService {
       brand: product.brand?.name,
       media: product.productMedia || [],
       paymentOptions: product.paymentOptions || [],
-      viewCount: product.viewCount + 1,
+      viewCount,
       likeCount: product.likeCount,
       bulkAvailable: product.bulkAvailable,
+      consumerMinimumQuantity: product.consumerMinimumQuantity,
+      consumerMaximumQuantity: product.consumerMaximumQuantity,
+      resellerMinimumQuantity: product.resellerMinimumQuantity,
+      resellerMaximumQuantity: product.resellerMaximumQuantity,
     };
 
     // Conditionally include stock
@@ -282,32 +395,26 @@ export class ProductsService {
       result.labelColor = product.labelColor;
     }
 
-    // Conditionally include the total points this product carries
-    if (product.showTotalPoints === 1) {
-      result.totalPoints = Number(product.totalPoints);
-    }
-
-    // Conditionally include the per-receiver breakdown of how those points
-    // get shared out (buyer/upline/pool) — same percentages the purchase
-    // queue actually credits with, via calculateSharedPoints.
-    if (product.showPointsSharing === 1) {
-      const activeRules = await this.pointDistributionRepo.find({
-        where: {
-          eventType: PointEventType.BUY_PRODUCT,
-          status: PointDistributionStatus.ACTIVE,
-        },
-        order: { priority: 'ASC' },
-      });
-
-      const totalPointsPerUnit = Number(product.totalPoints);
-      result.pointsSharing = activeRules.map((rule) => ({
-        receiverType: rule.receiverType,
-        pointsPercentage: Number(rule.pointsPercentage),
-        points: calculateSharedPoints(
-          totalPointsPerUnit,
-          Number(rule.pointsPercentage),
+    // Consumer/default: totalPoints/pointsSharing come from the product's
+    // own show_total_points/show_points_sharing. Reseller: the same fields
+    // instead come from each active bulk package under this product (a
+    // reseller buys via a specific package, which can set its own values).
+    const activeRules = await this.getActivePointDistributionRules();
+    if (type === 'reseller') {
+      const bulkPointsSharingByProduct =
+        await this.loadBulkPointsSharingByProduct([product.id], activeRules);
+      result.bulkPointsSharing =
+        bulkPointsSharingByProduct.get(product.id) ?? [];
+    } else {
+      Object.assign(
+        result,
+        this.buildPointsInfo(
+          product.showTotalPoints,
+          product.showPointsSharing,
+          product.totalPoints,
+          activeRules,
         ),
-      }));
+      );
     }
 
     const feedbackByProduct = await this.loadFeedbackByProduct([product.id]);

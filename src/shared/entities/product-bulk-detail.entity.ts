@@ -84,6 +84,20 @@ export class ProductBulkDetail {
   })
   totalPoints: number;
 
+  // Buyer-facing visibility flags for this specific package — mirrors
+  // products.show_total_points/show_points_sharing but defaults to visible
+  // (1) rather than hidden, unlike the product-level columns.
+  @Column({ name: 'show_total_points', type: 'tinyint', width: 1, default: 1 })
+  showTotalPoints: number;
+
+  @Column({
+    name: 'show_points_sharing',
+    type: 'tinyint',
+    width: 1,
+    default: 1,
+  })
+  showPointsSharing: number;
+
   @Index()
   @Column({ name: 'sort_order', type: 'int', unsigned: true, default: 0 })
   sortOrder: number;

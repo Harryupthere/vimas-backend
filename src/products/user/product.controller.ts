@@ -29,6 +29,6 @@ export class ProductsUserController {
     @Param('id') id: number,
     @Query('type') type: string,
   ) {
-    return this.productsService.findOneProductUsers(id, type);
+    return this.productsService.findOneProductUsers(id, req.user.id, type);
   }
 }

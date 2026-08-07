@@ -8,6 +8,14 @@ import { MembershipTypesModule } from './membership-types/membership-types.modul
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ProductFeedbackModule } from './product-feedback/product-feedback.module';
 import { ProductBulkDetailsModule } from './product-bulk-details/product-bulk-details.module';
+import { UploadModule } from './upload/upload.module';
+import { RewardMallCategoriesModule } from './reward-mall-categories/reward-mall-categories.module';
+import { RewardMallProductsModule } from './reward-mall-products/reward-mall-products.module';
+import { RewardMallProductMediaModule } from './reward-mall-product-media/reward-mall-product-media.module';
+import { RewardMallPurchaseStatusModule } from './reward-mall-purchase-status/reward-mall-purchase-status.module';
+import { RewardMallPurchasesModule } from './reward-mall-purchases/reward-mall-purchases.module';
+import { ProductLikesModule } from './product-likes/product-likes.module';
+import { ProductViewsModule } from './product-views/product-views.module';
 import { RegistrationTypesModule } from './registration_types/registration_types.module';
 import { ConfigModule } from '@nestjs/config';
 import { CategoryModule } from './category/category.module';
@@ -73,6 +81,14 @@ import { ScheduleModule } from '@nestjs/schedule';
     DashboardModule,
     ProductFeedbackModule,
     ProductBulkDetailsModule,
+    UploadModule,
+    RewardMallCategoriesModule,
+    RewardMallProductsModule,
+    RewardMallProductMediaModule,
+    RewardMallPurchaseStatusModule,
+    RewardMallPurchasesModule,
+    ProductLikesModule,
+    ProductViewsModule,
     RegistrationTypesModule,
     CategoryModule,
     BrandModule,

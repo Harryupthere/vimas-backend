@@ -171,6 +171,53 @@
       ]
     },
     {
+      "name": "Upload",
+      "item": [
+        {
+          "name": "Generate Presigned URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/upload/presigned-url",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "upload",
+                "presigned-url"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"product-image.jpg\",\n  \"fileType\": \"image/jpeg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Returns { uploadUrl, fileUrl }. PUT the raw file bytes directly to uploadUrl (with a matching Content-Type header, no auth) within 5 minutes \u2014 the presigned URL expires after that. fileUrl is the permanent CloudFront URL to store/display once the upload completes. Any authenticated user or admin token works \u2014 this endpoint isn't role-gated."
+          }
+        }
+      ]
+    },
+    {
       "name": "Users",
       "item": [
         {
@@ -779,14 +826,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Wireless Bluetooth Headphones\",\n  \"subTitle\": \"Noise Cancelling Over-Ear\",\n  \"description\": \"High-quality wireless headphones with deep bass.\",\n  \"sellingPrice\": 4999,\n  \"stock\": 120,\n  \"categoryId\": 1,\n  \"brandId\": 1,\n  \"totalPoints\": 100,\n  \"showTotalPoints\": true,\n  \"showPointsSharing\": true,\n  \"bulkAvailable\": true\n}",
+              "raw": "{\n  \"name\": \"Wireless Bluetooth Headphones\",\n  \"subTitle\": \"Noise Cancelling Over-Ear\",\n  \"description\": \"High-quality wireless headphones with deep bass.\",\n  \"sellingPrice\": 4999,\n  \"stock\": 120,\n  \"categoryId\": 1,\n  \"brandId\": 1,\n  \"totalPoints\": 100,\n  \"showTotalPoints\": true,\n  \"showPointsSharing\": true,\n  \"bulkAvailable\": true,\n  \"consumerMinimumQuantity\": 1,\n  \"consumerMaximumQuantity\": 9,\n  \"resellerMinimumQuantity\": 1,\n  \"resellerMaximumQuantity\": 100\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "description": "totalPoints is the points pool (per unit) this product carries, split across buyer/upline/pool via each active PointDistribution rule's pointsPercentage. showTotalPoints/showPointsSharing control whether the buyer-facing product detail exposes totalPoints and the per-receiver points breakdown, respectively. bulkAvailable gates whether the product shows up in the reseller listing (GET /products?type=reseller) and its bulk-purchase page. Admin is the sole product creator/owner (no merchant_id column exists anymore)."
+            "description": "totalPoints is the points pool (per unit) this product carries, split across buyer/upline/pool via each active PointDistribution rule's pointsPercentage. showTotalPoints/showPointsSharing control whether the buyer-facing product detail exposes totalPoints and the per-receiver points breakdown, respectively. bulkAvailable gates whether the product shows up in the reseller listing (GET /products?type=reseller) and its bulk-purchase page. consumerMinimumQuantity/consumerMaximumQuantity and resellerMinimumQuantity/resellerMaximumQuantity bound how many units a buyer can hold in their cart for this product, per cart_type \u2014 enforced in CartService.addToCart. Admin is the sole product creator/owner (no merchant_id column exists anymore)."
           }
         },
         {
@@ -963,14 +1010,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"productId\": 1,\n  \"packageQuantity\": 10,\n  \"unitPrice\": 45.00,\n  \"discountPercentage\": 5,\n  \"freeQuantity\": 1,\n  \"fees\": 0,\n  \"shippingCharges\": 10,\n  \"totalPrice\": 450.00,\n  \"totalPoints\": 90,\n  \"sortOrder\": 1\n}",
+              "raw": "{\n  \"productId\": 1,\n  \"packageQuantity\": 10,\n  \"unitPrice\": 45.00,\n  \"discountPercentage\": 5,\n  \"freeQuantity\": 1,\n  \"fees\": 0,\n  \"shippingCharges\": 10,\n  \"totalPrice\": 450.00,\n  \"totalPoints\": 90,\n  \"showTotalPoints\": true,\n  \"showPointsSharing\": true,\n  \"sortOrder\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "description": "Unique per (productId, packageQuantity) \u2014 creating a duplicate package for the same product returns a 409."
+            "description": "Unique per (productId, packageQuantity) \u2014 creating a duplicate package for the same product returns a 409. showTotalPoints/showPointsSharing default to true (unlike the product-level flags, which default to false) \u2014 set to false to hide this package's totalPoints/points breakdown on the reseller product view."
           }
         },
         {
@@ -1073,7 +1120,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"unitPrice\": 42.50,\n  \"status\": 1\n}",
+              "raw": "{\n  \"unitPrice\": 42.50,\n  \"showPointsSharing\": false,\n  \"status\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2975,6 +3022,790 @@
                 }
               ]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reward Mall Categories",
+      "item": [
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-categories"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Electronics\",\n  \"description\": \"Redeem points for gadgets\",\n  \"icon\": \"https://example.com/icons/electronics.png\",\n  \"sortOrder\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-categories?status=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-categories"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "1",
+                  "disabled": false
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-categories/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-categories",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-categories/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-categories",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-categories/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-categories",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reward Mall Products",
+      "item": [
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-products"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": 1,\n  \"name\": \"Wireless Earbuds\",\n  \"subTitle\": \"Redeem with your reward points\",\n  \"description\": \"Bluetooth 5.0 earbuds with charging case.\",\n  \"pointPrice\": 500,\n  \"minimumQuantity\": 1,\n  \"maximumQuantity\": 3,\n  \"stock\": 50,\n  \"stockShow\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-products?page=1&limit=10&categoryId=1&status=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                },
+                {
+                  "key": "categoryId",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "status",
+                  "value": "1",
+                  "disabled": false
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-products/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-products",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-products/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-products",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pointPrice\": 450,\n  \"status\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-products/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-products",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reward Mall Product Media",
+      "item": [
+        {
+          "name": "Add Media",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-product-media",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-product-media"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rewardMallProductId\": 1,\n  \"mediaUrl\": \"https://example.com/image.jpg\",\n  \"mediaType\": \"image\",\n  \"sortOrder\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update Media",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-product-media/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-product-media",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sortOrder\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Remove Media",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-product-media/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-product-media",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reward Mall Purchase Status",
+      "item": [
+        {
+          "name": "Create Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-purchase-status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-purchase-status"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pending\",\n  \"description\": \"Redemption received, awaiting processing\",\n  \"colour\": \"#F5A623\",\n  \"symbol\": \"PENDING\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create these in the order you want as your workflow (e.g. Pending -> Processing -> Shipped -> Delivered). The first row created (id 1) is used as the default status for every new redemption."
+          }
+        },
+        {
+          "name": "List Statuses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-purchase-status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-purchase-status"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-purchase-status/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-purchase-status",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-purchase-status/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-purchase-status",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Shipped\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Status",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-purchase-status/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-purchase-status",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reward Mall Purchases",
+      "item": [
+        {
+          "name": "List Purchases",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-purchases?page=1&limit=10&userId=&statusId=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-purchases"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                },
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": false
+                },
+                {
+                  "key": "statusId",
+                  "value": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Purchase",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-purchases/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-purchases",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Purchase (Fulfilment)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/reward-mall-purchases/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reward-mall-purchases",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"statusId\": 2,\n  \"trackingNumber\": \"TRK123456789\",\n  \"adminRemark\": [\"Shipped via courier\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Points were already debited at redemption time \u2014 this only updates fulfilment status/tracking/remarks, never re-touches the buyer's points balance."
           }
         }
       ]

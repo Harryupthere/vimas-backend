@@ -5,12 +5,13 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from '../shared/auth/strategies/jwt.strategy';
 import { PointUserBalance } from '../shared/entities/point-user-balance.entity';
 import { PointTransaction } from '../shared/entities/point-transaction.entity';
+import { Order } from '../shared/entities/order.entity';
 import { DashboardService } from './dashboard.service';
 import { DashboardUserController } from './user/dashboard.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PointUserBalance, PointTransaction]),
+    TypeOrmModule.forFeature([PointUserBalance, PointTransaction, Order]),
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your_jwt_secret',

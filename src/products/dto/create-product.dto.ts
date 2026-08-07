@@ -2,8 +2,10 @@ import {
   IsString,
   IsOptional,
   IsNumber,
+  IsInt,
   IsBoolean,
   IsArray,
+  Min,
 } from 'class-validator';
 
 export class CreateProductDto {
@@ -57,6 +59,27 @@ export class CreateProductDto {
   @IsOptional()
   @IsNumber()
   totalPoints?: number;
+
+  // Order quantity bounds per cart_type — enforced by CartService.addToCart
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  consumerMinimumQuantity?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  consumerMaximumQuantity?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  resellerMinimumQuantity?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  resellerMaximumQuantity?: number;
 
   @IsOptional()
   @IsBoolean()

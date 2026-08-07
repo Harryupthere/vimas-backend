@@ -7,11 +7,13 @@ import {
   Put,
   Delete,
   Get,
+  Query,
   UseGuards,
   Req,
 } from '@nestjs/common';
 import { CartService } from '../cart.service';
 import { AddToCartDto, UpdateCartDto } from '../dto/cart.dto';
+import { CartType } from '../../shared/entities/cart.entity';
 import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 
 @Controller('cart')
@@ -39,9 +41,16 @@ export class CartController {
   removeFromCart(
     @Req() req,
     @Param('productId', ParseIntPipe) productId: number,
+    @Query('cart_type') cartType?: CartType,
+    @Query('productBulkDetailsId') productBulkDetailsId?: string,
   ) {
     const buyerId = req.user.id;
-    return this.cartService.removeFromCart(buyerId, productId);
+    return this.cartService.removeFromCart(
+      buyerId,
+      productId,
+      cartType,
+      productBulkDetailsId ? +productBulkDetailsId : undefined,
+    );
   }
 
   @Get()

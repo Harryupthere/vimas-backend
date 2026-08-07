@@ -8,6 +8,8 @@ import { ProductHistoryModule } from '../product-history/product-history.module'
 import { PointDistribution } from 'src/shared/entities/point-distribution.entity';
 import { ProductFeedback } from 'src/shared/entities/product-feedback.entity';
 import { ProductFeedbackLike } from 'src/shared/entities/product-feedback-like.entity';
+import { ProductBulkDetail } from 'src/shared/entities/product-bulk-detail.entity';
+import { ProductViewsModule } from '../product-views/product-views.module';
 
 @Module({
   imports: [
@@ -16,8 +18,10 @@ import { ProductFeedbackLike } from 'src/shared/entities/product-feedback-like.e
       PointDistribution,
       ProductFeedback,
       ProductFeedbackLike,
+      ProductBulkDetail,
     ]),
     ProductHistoryModule,
+    ProductViewsModule,
   ],
   controllers: [ProductsAdminController, ProductsUserController],
   providers: [ProductsService],
