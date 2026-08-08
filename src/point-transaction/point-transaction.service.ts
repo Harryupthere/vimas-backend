@@ -51,18 +51,32 @@ export class PointTransactionService {
   async findAll(
     page: number,
     limit: number,
-    filters?: { walletType?: string; walletId?: number },
+    filters?: { walletType?: string; walletId?: number; search?: string },
   ) {
-    const where: any = {};
-    if (filters?.walletType) where.walletType = filters.walletType;
-    if (filters?.walletId) where.walletId = filters.walletId;
+    const query = this.pointTransactionRepo
+      .createQueryBuilder('pt')
+      .orderBy('pt.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
 
-    const [data, total] = await this.pointTransactionRepo.findAndCount({
-      where,
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    if (filters?.walletType) {
+      query.andWhere('pt.wallet_type = :walletType', {
+        walletType: filters.walletType,
+      });
+    }
+    if (filters?.walletId) {
+      query.andWhere('pt.wallet_id = :walletId', {
+        walletId: filters.walletId,
+      });
+    }
+    if (filters?.search) {
+      query.andWhere(
+        '(pt.remarks LIKE :search OR pt.transaction_reason LIKE :search)',
+        { search: `%${filters.search}%` },
+      );
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {
@@ -169,7 +183,7 @@ export class PointTransactionService {
   //   };
   // }
 
-  async findMine(userId: number, page: number, limit: number) {
+  async findMine(userId: number, page: number, limit: number, search?: string) {
     const userWallet = await this.pointUserBalanceRepo.findOne({
       where: {
         userId,
@@ -180,18 +194,26 @@ export class PointTransactionService {
       throw new NotFoundException('Point wallet not found');
     }
 
-    const [transactions, total] = await this.pointTransactionRepo.findAndCount({
-      where: {
+    const query = this.pointTransactionRepo
+      .createQueryBuilder('pt')
+      .leftJoinAndSelect('pt.sourceUser', 'sourceUser')
+      .leftJoinAndSelect('pt.order', 'order')
+      .where('pt.wallet_type = :walletType', {
         walletType: PointWalletType.USER,
-        walletId: Number(userWallet.id),
-      },
-      relations: ['sourceUser', 'order'],
-      order: {
-        id: 'DESC',
-      },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+      })
+      .andWhere('pt.wallet_id = :walletId', { walletId: Number(userWallet.id) })
+      .orderBy('pt.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere(
+        '(pt.remarks LIKE :search OR pt.transaction_reason LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [transactions, total] = await query.getManyAndCount();
 
     return {
       data: {

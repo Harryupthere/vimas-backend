@@ -25,8 +25,9 @@ export class ReviewRatingAdminController {
   findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
   ) {
-    return this.reviewRatingService.findAll(+page, +limit);
+    return this.reviewRatingService.findAll(+page, +limit, search);
   }
 
   @Patch(':id/visibility')

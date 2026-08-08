@@ -80,7 +80,23 @@
       "Bash(python3 /private/tmp/claude-501/-Users-user-Desktop-Harry-vimas-backend/23cba680-e4c4-442e-8617-b1068ff4edff/scratchpad/update_postman14.py)",
       "Bash(mysql -h localhost -P 3306 -u root --skip-password vimas -e \"SELECT * FROM payment_status;\")",
       "Bash(sleep 3; grep -i \"dashboardmodule\\\\|error\\\\|exception\\\\|successfully started\\\\|EADDRINUSE\" /tmp/dashboard-trend-boot-test.log)",
-      "Bash(rm -f /tmp/dashboard-trend-boot-test.log)"
+      "Bash(rm -f /tmp/dashboard-trend-boot-test.log)",
+      "Read(//tmp/**)",
+      "Bash(xargs npx eslint --fix)",
+      "Bash(python3 /private/tmp/claude-501/-Users-user-Desktop-Harry-vimas-backend/23cba680-e4c4-442e-8617-b1068ff4edff/scratchpad/update_postman_search.py)",
+      "Bash(mysql -h localhost -P 3306 -u root --skip-password vimas -e \"select id,name from payment_statuses;\")",
+      "Bash(mysql -h localhost -P 3306 -u root vimas -e \"select id,name from payment_statuses;\")",
+      "Bash(mysql -h localhost -P 3306 -u root vimas -e \"show tables like '%payment_status%';\")",
+      "Bash(mysql -h localhost -P 3306 -u root vimas -e \"select * from payment_status;\")",
+      "Bash(echo \"=== build exit $? ===\")",
+      "Bash(mysql -h localhost -P 3306 -u root vimas -e ' *)",
+      "Bash(echo \"build exit $?\")",
+      "Bash(curl -s -o /tmp/resp.json -w \"%{http_code}\\\\n\" \"http://localhost:5002/api/vimas/reward-mall-products?page=1&limit=10&search=a\")",
+      "Bash(sed -i '' \"s#/Users/user/Desktop/Harry/vimas-backend/dist#./dist#g\" ./debug_reward_mall_tmp.js)",
+      "Bash(node ./debug_reward_mall_tmp.js)",
+      "Bash(sed -i '' \"s#service.findAllUsers\\(1, 10, undefined, undefined, 'a'\\)#service.findAllUsers\\(1, 10, undefined, undefined, 'a'\\)#\" ./debug_reward_mall_tmp.js)",
+      "Bash(curl -s -o /tmp/public_resp.json -w \"HTTP %{http_code}\\\\n\" \"http://localhost:5002/api/vimas/public/reward-mall-products?page=1&limit=10&search=a\")",
+      "Bash(python3)"
     ],
     "additionalDirectories": [
       "/private/tmp"

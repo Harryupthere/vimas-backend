@@ -70,8 +70,10 @@ export class OrdersService {
       const unitPrice = Number(item.price_snapshot);
       const discount = Number(item.discount_snapshot || 0);
       const total = item.quantity * (unitPrice - discount);
-      if(item.quantity>9 && item.cart_type=='consumer'){
-      throw new NotFoundException('Consumer can only order 9 quantity of product. Please buy the product from Reseller page.');
+      if (item.quantity > 9 && item.cart_type == 'consumer') {
+        throw new NotFoundException(
+          'Consumer can only order 9 quantity of product. Please buy the product from Reseller page.',
+        );
       }
 
       return this.orderRepo.create({
@@ -143,12 +145,12 @@ export class OrdersService {
     console.log(event.type);
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object;
         await this.markPaidBySessionId(session.id);
         break;
       }
       case 'checkout.session.expired': {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object;
         await this.orderRepo.update(
           {
             paymentGatewayId: session.id,
@@ -162,7 +164,7 @@ export class OrdersService {
         break;
       }
       case 'payment_intent.payment_failed': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const paymentIntent = event.data.object;
         const idsRaw = paymentIntent.metadata?.orderIds;
         if (idsRaw) {
           const ids = idsRaw
@@ -195,7 +197,7 @@ export class OrdersService {
   // exactly like the webhook path would have.
   @Cron(CronExpression.EVERY_30_SECONDS)
   async reconcilePendingOrdersWithStripe(): Promise<void> {
-    console.log("Fecthing pending orders")
+    console.log('Fecthing pending orders');
     if (this.isReconcilingPendingOrders) {
       this.logger.warn(
         'Previous pending-orders reconciliation run is still in progress, skipping this tick',
@@ -222,7 +224,9 @@ export class OrdersService {
       this.logger.log(
         `Reconciling ${sessionIds.length} pending Stripe session(s) against pending orders`,
       );
-    console.log( `Reconciling ${sessionIds.length} pending Stripe session(s) against pending orders`)
+      console.log(
+        `Reconciling ${sessionIds.length} pending Stripe session(s) against pending orders`,
+      );
 
       for (const sessionId of sessionIds) {
         try {
@@ -269,7 +273,6 @@ export class OrdersService {
   // queue row or double-credit points.
   private async markPaidBySessionId(sessionId: string) {
     try {
-
       const pendingOrders = await this.orderRepo.find({
         where: {
           paymentGatewayId: sessionId,
@@ -291,7 +294,6 @@ export class OrdersService {
 
       const jobs: PointDistributionPurchaseQueue[] = [];
       for (const order of pendingOrders) {
-
         await this.cartRepo.delete({
           buyer: { id: order.buyerId },
           product: { id: order.productId },
@@ -344,14 +346,30 @@ export class OrdersService {
     return { data: orders, message: 'Order status fetched successfully' };
   }
 
-  async findMyOrders(buyerId: number, page: number, limit: number) {
-    const [data, total] = await this.orderRepo.findAndCount({
-      where: { buyerId },
-      relations: ['product', 'orderStatus', 'paymentStatus'],
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+  async findMyOrders(
+    buyerId: number,
+    page: number,
+    limit: number,
+    search?: string,
+  ) {
+    const query = this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.product', 'product')
+      .leftJoinAndSelect('order.orderStatus', 'orderStatus')
+      .leftJoinAndSelect('order.paymentStatus', 'paymentStatus')
+      .where('order.buyer_id = :buyerId', { buyerId })
+      .orderBy('order.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere(
+        '(product.name LIKE :search OR order.payment_gateway_id LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {
@@ -380,14 +398,30 @@ export class OrdersService {
     return { data: order, message: 'Order' };
   }
 
-  async findAll(page: number, limit: number) {
-    const [data, total] = await this.orderRepo.findAndCount({
-      relations: ['product', 'buyer', 'orderStatus', 'paymentStatus'],
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
-    
+  async findAll(page: number, limit: number, search?: string) {
+    const query = this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.product', 'product')
+      .leftJoinAndSelect('order.buyer', 'buyer')
+      .leftJoinAndSelect('order.orderStatus', 'orderStatus')
+      .leftJoinAndSelect('order.paymentStatus', 'paymentStatus')
+      .orderBy('order.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere(
+        `(product.name LIKE :search
+          OR order.payment_gateway_id LIKE :search
+          OR buyer.first_name LIKE :search
+          OR buyer.last_name LIKE :search
+          OR buyer.email LIKE :search
+          OR buyer.unique_user_id LIKE :search)`,
+        { search: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {

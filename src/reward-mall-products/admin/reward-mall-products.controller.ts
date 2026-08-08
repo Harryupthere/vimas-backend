@@ -36,12 +36,14 @@ export class RewardMallProductsAdminController {
     @Query('limit') limitStr: string = '10',
     @Query('categoryId') categoryId?: string,
     @Query('status') status?: string,
+    @Query('search') search?: string,
   ) {
     return this.rewardMallProductsService.findAll(
       +pageStr,
       +limitStr,
       categoryId ? +categoryId : undefined,
       status !== undefined ? +status : undefined,
+      search,
     );
   }
 

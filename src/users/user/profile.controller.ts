@@ -7,6 +7,7 @@ import {
   UseGuards,
   Req,
   Get,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from '../users.service';
 import { UpdateUserDto } from '../dto/update-user.dto';
@@ -36,5 +37,27 @@ export class ProfileController {
   @Patch('password')
   async updatePassword(@Req() req, @Body() body: any) {
     return this.usersService.updatePassword(req.user.id, body);
+  }
+
+  // "my team" — teammates for the requested referral level (1 = direct
+  // referrals, 2 = their referrals), with per-teammate purchase/earnings
+  // stats. One endpoint managed by `level` so the frontend can drive its
+  // two separate level-1/level-2 tables off the same call.
+  @UseGuards(JwtAuthGuard)
+  @Get('my-team')
+  async getMyTeam(
+    @Req() req,
+    @Query('level') level: string = '1',
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
+  ) {
+    return this.usersService.getMyTeam(
+      req.user.id,
+      +level,
+      +page,
+      +limit,
+      search,
+    );
   }
 }

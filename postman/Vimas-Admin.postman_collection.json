@@ -350,7 +350,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/categories?page=1&limit=10",
+              "raw": "{{base_url}}/admin/categories?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -368,6 +368,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -505,7 +510,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/brands?page=1&limit=10",
+              "raw": "{{base_url}}/admin/brands?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -523,6 +528,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -842,7 +852,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/products?page=1&limit=10",
+              "raw": "{{base_url}}/admin/products?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -860,6 +870,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -1026,7 +1041,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/product-bulk-details?productId=1&status=1",
+              "raw": "{{base_url}}/admin/product-bulk-details?productId=1&status=1&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -1044,6 +1059,11 @@
                   "key": "status",
                   "value": "1",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -1330,7 +1350,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/product-feedback?page=1&limit=10",
+              "raw": "{{base_url}}/admin/product-feedback?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -1348,6 +1368,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -1369,7 +1394,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/product-feedback?page=1&limit=10&productId=1&status=active",
+              "raw": "{{base_url}}/admin/product-feedback?page=1&limit=10&productId=1&status=active&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -1397,6 +1422,11 @@
                   "key": "status",
                   "value": "active",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -1565,13 +1595,20 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/payment-options",
+              "raw": "{{base_url}}/admin/payment-options?search=",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "admin",
                 "payment-options"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
               ]
             },
             "auth": {
@@ -1878,7 +1915,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/user-types?page=1&limit=10",
+              "raw": "{{base_url}}/admin/user-types?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -1896,6 +1933,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -2061,7 +2103,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/membership-types?page=1&limit=10",
+              "raw": "{{base_url}}/admin/membership-types?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -2079,6 +2121,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -2244,7 +2291,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/registration-types?page=1&limit=10",
+              "raw": "{{base_url}}/admin/registration-types?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -2262,6 +2309,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -2427,13 +2479,20 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/order-status",
+              "raw": "{{base_url}}/admin/order-status?search=",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "admin",
                 "order-status"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
               ]
             },
             "auth": {
@@ -2598,13 +2657,20 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/payment-status",
+              "raw": "{{base_url}}/admin/payment-status?search=",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "admin",
                 "payment-status"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
               ]
             },
             "auth": {
@@ -2728,7 +2794,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/orders?page=1&limit=10",
+              "raw": "{{base_url}}/admin/orders?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -2746,6 +2812,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -2843,7 +2914,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/review-rating?page=1&limit=10",
+              "raw": "{{base_url}}/admin/review-rating?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -2861,6 +2932,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -3076,7 +3152,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/reward-mall-categories?status=1",
+              "raw": "{{base_url}}/admin/reward-mall-categories?status=1&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -3089,6 +3165,11 @@
                   "key": "status",
                   "value": "1",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -3254,7 +3335,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/reward-mall-products?page=1&limit=10&categoryId=1&status=1",
+              "raw": "{{base_url}}/admin/reward-mall-products?page=1&limit=10&categoryId=1&status=1&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -3282,6 +3363,11 @@
                   "key": "status",
                   "value": "1",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -3564,13 +3650,20 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/reward-mall-purchase-status",
+              "raw": "{{base_url}}/admin/reward-mall-purchase-status?search=",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "admin",
                 "reward-mall-purchase-status"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
               ]
             },
             "auth": {
@@ -3694,7 +3787,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/reward-mall-purchases?page=1&limit=10&userId=&statusId=",
+              "raw": "{{base_url}}/admin/reward-mall-purchases?page=1&limit=10&userId=&statusId=&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -3722,6 +3815,11 @@
                   "key": "statusId",
                   "value": "",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -3861,7 +3959,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/point-distribution?status=active",
+              "raw": "{{base_url}}/admin/point-distribution?search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -3874,6 +3972,11 @@
                   "key": "status",
                   "value": "active",
                   "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -4039,7 +4142,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/point-user-balance?page=1&limit=10",
+              "raw": "{{base_url}}/admin/point-user-balance?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -4057,6 +4160,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -4222,7 +4330,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/point-admin-balance?page=1&limit=10",
+              "raw": "{{base_url}}/admin/point-admin-balance?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -4240,6 +4348,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -4405,7 +4518,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/point-pool-detail?status=active",
+              "raw": "{{base_url}}/admin/point-pool-detail?search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -4418,6 +4531,11 @@
                   "key": "status",
                   "value": "active",
                   "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -4583,7 +4701,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/point-pool?page=1&limit=10&status=active",
+              "raw": "{{base_url}}/admin/point-pool?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -4606,6 +4724,11 @@
                   "key": "status",
                   "value": "active",
                   "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -4771,7 +4894,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/point-transaction?page=1&limit=10&walletType=USER&walletId=1",
+              "raw": "{{base_url}}/admin/point-transaction?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -4799,6 +4922,11 @@
                   "key": "walletId",
                   "value": "1",
                   "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },

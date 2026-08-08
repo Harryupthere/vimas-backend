@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import {
   ProductFeedback,
   ProductFeedbackStatus,
@@ -66,18 +66,31 @@ export class ProductFeedbackService {
     return { data: saved, message: 'Feedback submitted successfully' };
   }
 
-  async findForProduct(productId: number, page: number, limit: number) {
-    const [data, total] = await this.feedbackRepo.findAndCount({
-      where: {
-        productId,
-        parentFeedbackId: IsNull(),
+  async findForProduct(
+    productId: number,
+    page: number,
+    limit: number,
+    search?: string,
+  ) {
+    const query = this.feedbackRepo
+      .createQueryBuilder('feedback')
+      .leftJoinAndSelect('feedback.user', 'user')
+      .where('feedback.product_id = :productId', { productId })
+      .andWhere('feedback.parent_feedback_id IS NULL')
+      .andWhere('feedback.status = :status', {
         status: ProductFeedbackStatus.ACTIVE,
-      },
-      relations: ['user'],
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+      })
+      .orderBy('feedback.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere('feedback.comment LIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {
@@ -91,22 +104,35 @@ export class ProductFeedbackService {
     };
   }
 
-  async findReplies(feedbackId: number, page: number, limit: number) {
+  async findReplies(
+    feedbackId: number,
+    page: number,
+    limit: number,
+    search?: string,
+  ) {
     const parent = await this.feedbackRepo.findOne({
       where: { id: feedbackId },
     });
     if (!parent) throw new NotFoundException('Feedback not found');
 
-    const [data, total] = await this.feedbackRepo.findAndCount({
-      where: {
-        parentFeedbackId: feedbackId,
+    const query = this.feedbackRepo
+      .createQueryBuilder('feedback')
+      .leftJoinAndSelect('feedback.user', 'user')
+      .where('feedback.parent_feedback_id = :feedbackId', { feedbackId })
+      .andWhere('feedback.status = :status', {
         status: ProductFeedbackStatus.ACTIVE,
-      },
-      relations: ['user'],
-      order: { id: 'ASC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+      })
+      .orderBy('feedback.id', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere('feedback.comment LIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {
@@ -120,14 +146,23 @@ export class ProductFeedbackService {
     };
   }
 
-  async findMine(userId: number, page: number, limit: number) {
-    const [data, total] = await this.feedbackRepo.findAndCount({
-      where: { userId },
-      relations: ['product'],
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+  async findMine(userId: number, page: number, limit: number, search?: string) {
+    const query = this.feedbackRepo
+      .createQueryBuilder('feedback')
+      .leftJoinAndSelect('feedback.product', 'product')
+      .where('feedback.user_id = :userId', { userId })
+      .orderBy('feedback.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere(
+        '(feedback.comment LIKE :search OR product.name LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {
@@ -201,19 +236,40 @@ export class ProductFeedbackService {
   async findAll(
     page: number,
     limit: number,
-    filters?: { productId?: number; status?: ProductFeedbackStatus },
+    filters?: {
+      productId?: number;
+      status?: ProductFeedbackStatus;
+      search?: string;
+    },
   ) {
-    const where: any = {};
-    if (filters?.productId) where.productId = filters.productId;
-    if (filters?.status) where.status = filters.status;
+    const query = this.feedbackRepo
+      .createQueryBuilder('feedback')
+      .leftJoinAndSelect('feedback.user', 'user')
+      .leftJoinAndSelect('feedback.product', 'product')
+      .orderBy('feedback.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
 
-    const [data, total] = await this.feedbackRepo.findAndCount({
-      where,
-      relations: ['user', 'product'],
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    if (filters?.productId) {
+      query.andWhere('feedback.product_id = :productId', {
+        productId: filters.productId,
+      });
+    }
+    if (filters?.status) {
+      query.andWhere('feedback.status = :status', { status: filters.status });
+    }
+    if (filters?.search) {
+      query.andWhere(
+        `(feedback.comment LIKE :search
+          OR product.name LIKE :search
+          OR user.first_name LIKE :search
+          OR user.last_name LIKE :search
+          OR user.email LIKE :search)`,
+        { search: `%${filters.search}%` },
+      );
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {

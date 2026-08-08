@@ -25,12 +25,23 @@ export class PointPoolDetailService {
     };
   }
 
-  async findAll(status?: string) {
-    const where = status ? { status: status as any } : {};
-    const data = await this.pointPoolDetailRepo.find({
-      where,
-      order: { id: 'DESC' },
-    });
+  async findAll(status?: string, search?: string) {
+    const query = this.pointPoolDetailRepo
+      .createQueryBuilder('pointPoolDetail')
+      .orderBy('pointPoolDetail.id', 'DESC');
+
+    if (status) {
+      query.andWhere('pointPoolDetail.status = :status', { status });
+    }
+
+    if (search) {
+      query.andWhere(
+        '(pointPoolDetail.name LIKE :search OR pointPoolDetail.description LIKE :search OR pointPoolDetail.symbol LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const data = await query.getMany();
     return { data, message: 'Point pool details fetched successfully' };
   }
 

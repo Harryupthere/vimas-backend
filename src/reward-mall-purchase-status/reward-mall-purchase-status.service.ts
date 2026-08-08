@@ -25,8 +25,19 @@ export class RewardMallPurchaseStatusService {
     };
   }
 
-  async findAll() {
-    const data = await this.statusRepo.find({ order: { id: 'ASC' } });
+  async findAll(search?: string) {
+    const query = this.statusRepo
+      .createQueryBuilder('status')
+      .orderBy('status.id', 'ASC');
+
+    if (search) {
+      query.andWhere(
+        '(status.name LIKE :search OR status.description LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const data = await query.getMany();
     return {
       data,
       message: 'Reward mall purchase statuses fetched successfully',

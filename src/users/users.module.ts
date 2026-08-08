@@ -14,6 +14,8 @@ import { UserSessionStorage } from 'src/shared/entities/user_session_storage.ent
 import { UserSession } from 'src/shared/entities/user_session.entity';
 import { EmailService } from 'src/email/email.service';
 import { PointUserBalance } from 'src/shared/entities/point-user-balance.entity';
+import { PointTransaction } from 'src/shared/entities/point-transaction.entity';
+import { Order } from 'src/shared/entities/order.entity';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { PointUserBalance } from 'src/shared/entities/point-user-balance.entity'
       UserSession,
       UserSessionStorage,
       PointUserBalance,
+      PointTransaction,
+      Order,
     ]),
     PassportModule,
     JwtModule.register({

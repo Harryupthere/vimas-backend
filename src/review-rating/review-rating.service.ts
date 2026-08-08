@@ -54,13 +54,27 @@ export class ReviewRatingService {
     }
   }
 
-  async findForProduct(productId: number, page: number, limit: number) {
-    const [data, total] = await this.reviewRatingRepo.findAndCount({
-      where: { productId, showStatus: 1 },
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+  async findForProduct(
+    productId: number,
+    page: number,
+    limit: number,
+    search?: string,
+  ) {
+    const query = this.reviewRatingRepo
+      .createQueryBuilder('review')
+      .where('review.product_id = :productId', { productId })
+      .andWhere('review.show_status = 1')
+      .orderBy('review.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere('review.review LIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {
@@ -74,11 +88,21 @@ export class ReviewRatingService {
     };
   }
 
-  async findMine(userId: number) {
-    const data = await this.reviewRatingRepo.find({
-      where: { userId },
-      order: { id: 'DESC' },
-    });
+  async findMine(userId: number, search?: string) {
+    const query = this.reviewRatingRepo
+      .createQueryBuilder('review')
+      .leftJoinAndSelect('review.product', 'product')
+      .where('review.user_id = :userId', { userId })
+      .orderBy('review.id', 'DESC');
+
+    if (search) {
+      query.andWhere(
+        '(review.review LIKE :search OR product.name LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const data = await query.getMany();
     return { data, message: 'Your reviews fetched successfully' };
   }
 
@@ -106,13 +130,27 @@ export class ReviewRatingService {
   }
 
   // Admin
-  async findAll(page: number, limit: number) {
-    const [data, total] = await this.reviewRatingRepo.findAndCount({
-      relations: ['user', 'product'],
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+  async findAll(page: number, limit: number, search?: string) {
+    const query = this.reviewRatingRepo
+      .createQueryBuilder('review')
+      .leftJoinAndSelect('review.user', 'user')
+      .leftJoinAndSelect('review.product', 'product')
+      .orderBy('review.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere(
+        `(review.review LIKE :search
+          OR product.name LIKE :search
+          OR user.first_name LIKE :search
+          OR user.last_name LIKE :search
+          OR user.email LIKE :search)`,
+        { search: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {

@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { BrandService } from '../brand.service';
 
 @Controller('brands')
@@ -7,8 +7,8 @@ export class BrandUserController {
 
   // ✅ Get all brands (no pagination)
   @Get()
-  findAll() {
-    return this.brandService.findAllNoPagination();
+  findAll(@Query('search') search?: string) {
+    return this.brandService.findAllNoPagination(search);
   }
 
   // ✅ Get brands for a given category

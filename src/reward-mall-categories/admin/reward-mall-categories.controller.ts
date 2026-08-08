@@ -31,9 +31,10 @@ export class RewardMallCategoriesAdminController {
   }
 
   @Get()
-  findAll(@Query('status') status?: string) {
+  findAll(@Query('status') status?: string, @Query('search') search?: string) {
     return this.rewardMallCategoriesService.findAll(
       status !== undefined ? +status : undefined,
+      search,
     );
   }
 

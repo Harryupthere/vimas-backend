@@ -15,11 +15,12 @@ export class ProductsUserController {
     @Query('page') pageStr: string = '1',
     @Query('limit') limitStr: string = '10',
     @Query('type') type: string,
+    @Query('search') search: string,
     @Req() req,
   ) {
     const page = parseInt(pageStr);
     const limit = parseInt(limitStr);
-    return this.productsService.findAllProductsUsers(page, limit, type);
+    return this.productsService.findAllProductsUsers(page, limit, type, search);
   }
 
   @UseGuards(JwtAuthGuard)

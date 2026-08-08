@@ -34,13 +34,21 @@ export class PointAdminBalanceService {
     }
   }
 
-  async findAll(page: number, limit: number) {
-    const [data, total] = await this.pointAdminBalanceRepo.findAndCount({
-      relations: ['admin'],
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+  async findAll(page: number, limit: number, search?: string) {
+    const query = this.pointAdminBalanceRepo
+      .createQueryBuilder('balance')
+      .leftJoinAndSelect('balance.admin', 'admin')
+      .orderBy('balance.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere('admin.username LIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {

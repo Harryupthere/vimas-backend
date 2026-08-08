@@ -30,10 +30,12 @@ export class ProductFeedbackAdminController {
     @Query('limit') limit: string = '10',
     @Query('productId') productId?: string,
     @Query('status') status?: ProductFeedbackStatus,
+    @Query('search') search?: string,
   ) {
     return this.productFeedbackService.findAll(+page, +limit, {
       productId: productId ? +productId : undefined,
       status,
+      search,
     });
   }
 

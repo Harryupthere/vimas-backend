@@ -492,6 +492,53 @@
               }
             }
           }
+        },
+        {
+          "name": "My Team (Level 1 / Level 2)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/my-team?level=1&page=1&limit=10&search=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "my-team"
+              ],
+              "query": [
+                {
+                  "key": "level",
+                  "value": "1",
+                  "description": "1 = direct referrals, 2 = their referrals"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -540,12 +587,19 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/brands",
+              "raw": "{{base_url}}/brands?search=",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "brands"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
               ]
             },
             "auth": {
@@ -606,7 +660,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/products?page=1&limit=10&type=",
+              "raw": "{{base_url}}/products?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -628,6 +682,11 @@
                   "key": "type",
                   "value": "",
                   "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -914,7 +973,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/user/user-types?page=1&limit=10",
+              "raw": "{{base_url}}/user/user-types?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -932,6 +991,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -986,13 +1050,20 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/user/registration-types",
+              "raw": "{{base_url}}/user/registration-types?search=",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "user",
                 "registration-types"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
               ]
             },
             "auth": {
@@ -1247,12 +1318,19 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/contact-info",
+              "raw": "{{base_url}}/contact-info?search=",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "contact-info"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
               ]
             },
             "auth": {
@@ -1450,7 +1528,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/orders/my?page=1&limit=10",
+              "raw": "{{base_url}}/orders/my?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -1468,6 +1546,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -1562,7 +1645,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/review-rating/product/:productId?page=1&limit=10",
+              "raw": "{{base_url}}/review-rating/product/:productId?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -1581,6 +1664,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -1595,13 +1683,20 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/review-rating/my",
+              "raw": "{{base_url}}/review-rating/my?search=",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "review-rating",
                 "my"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
               ]
             },
             "auth": {
@@ -1695,12 +1790,19 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/reward-mall-categories",
+              "raw": "{{base_url}}/reward-mall-categories?search=",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "reward-mall-categories"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
               ]
             },
             "auth": {
@@ -1753,7 +1855,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/reward-mall-products?page=1&limit=10&categoryId=",
+              "raw": "{{base_url}}/reward-mall-products?page=1&limit=10&categoryId=&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -1775,6 +1877,11 @@
                   "key": "categoryId",
                   "value": "",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -1817,6 +1924,46 @@
               ]
             },
             "description": "Response includes currentPointsBalance and canAfford \u2014 an upfront preview of whether you have enough points, based on minimumQuantity. isOutOfStock is true if either the admin flagged it out of stock, OR you've already redeemed maximumQuantity of it (see purchasedQuantity/maxPurchaseReached) \u2014 canAfford factors this in too. The actual check happens again (authoritatively) when you call Redeem Product."
+          }
+        },
+        {
+          "name": "List Products (Public, No Auth)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/public/reward-mall-products?page=1&limit=10&categoryId=&search=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "public",
+                "reward-mall-products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
+              ]
+            },
+            "description": "Same listing as the authenticated 'List Products' request, but no auth required. purchasedQuantity/maxPurchaseReached are always 0/false here since there's no logged-in user to scope them to."
           }
         }
       ]
@@ -1903,7 +2050,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/reward-mall-purchases/my?page=1&limit=10",
+              "raw": "{{base_url}}/reward-mall-purchases/my?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -1921,6 +2068,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -1975,7 +2127,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/point-distribution?status=active",
+              "raw": "{{base_url}}/point-distribution?search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -1987,6 +2139,11 @@
                   "key": "status",
                   "value": "active",
                   "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -2026,7 +2183,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/point-pool-detail?status=active",
+              "raw": "{{base_url}}/point-pool-detail?search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -2038,6 +2195,11 @@
                   "key": "status",
                   "value": "active",
                   "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -2077,7 +2239,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/point-pool?page=1&limit=10&status=active",
+              "raw": "{{base_url}}/point-pool?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -2099,6 +2261,11 @@
                   "key": "status",
                   "value": "active",
                   "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -2170,7 +2337,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/point-transaction/my?page=1&limit=10",
+              "raw": "{{base_url}}/point-transaction/my?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -2188,6 +2355,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -2384,7 +2556,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/product-feedback/product/:productId?page=1&limit=10",
+              "raw": "{{base_url}}/product-feedback/product/:productId?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -2403,6 +2575,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -2424,7 +2601,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/product-feedback/:id/replies?page=1&limit=10",
+              "raw": "{{base_url}}/product-feedback/:id/replies?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -2443,6 +2620,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },
@@ -2464,7 +2646,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/product-feedback/my?page=1&limit=10",
+              "raw": "{{base_url}}/product-feedback/my?page=1&limit=10&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -2482,6 +2664,11 @@
                   "key": "limit",
                   "value": "10",
                   "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
                 }
               ]
             },

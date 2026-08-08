@@ -19,10 +19,19 @@ export class PaymentOptionsService {
     };
   }
 
-  async findAll() {
-    const options = await this.paymentOptionRepo.find();
+  async findAll(search?: string) {
+    const query = this.paymentOptionRepo.createQueryBuilder('paymentOption');
+
+    if (search) {
+      query.andWhere(
+        '(paymentOption.name LIKE :search OR paymentOption.description LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const options = await query.getMany();
     return {
-      data:  options,
+      data: options,
       message: 'Payment options fetched successfully',
     };
   }

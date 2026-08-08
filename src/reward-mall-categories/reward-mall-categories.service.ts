@@ -25,12 +25,24 @@ export class RewardMallCategoriesService {
     };
   }
 
-  async findAll(status?: number) {
-    const where = status !== undefined ? { status } : {};
-    const data = await this.categoryRepo.find({
-      where,
-      order: { sortOrder: 'ASC', id: 'ASC' },
-    });
+  async findAll(status?: number, search?: string) {
+    const query = this.categoryRepo
+      .createQueryBuilder('category')
+      .orderBy('category.sort_order', 'ASC')
+      .addOrderBy('category.id', 'ASC');
+
+    if (status !== undefined) {
+      query.andWhere('category.status = :status', { status });
+    }
+
+    if (search) {
+      query.andWhere(
+        '(category.name LIKE :search OR category.description LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const data = await query.getMany();
     return { data, message: 'Reward mall categories fetched successfully' };
   }
 

@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { PointPoolService } from '../point-pool.service';
 
 @Controller('point-pool')
@@ -16,8 +10,9 @@ export class PointPoolUserController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
     @Query('status') status?: string,
+    @Query('search') search?: string,
   ) {
-    return this.pointPoolService.findAll(+page, +limit, status);
+    return this.pointPoolService.findAll(+page, +limit, status, search);
   }
 
   @Get(':id')

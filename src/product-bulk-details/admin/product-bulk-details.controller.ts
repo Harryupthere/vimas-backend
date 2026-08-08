@@ -34,10 +34,12 @@ export class ProductBulkDetailsAdminController {
   findAll(
     @Query('productId') productId?: string,
     @Query('status') status?: string,
+    @Query('search') search?: string,
   ) {
     return this.productBulkDetailsService.findAll(
       productId ? +productId : undefined,
       status !== undefined ? +status : undefined,
+      search,
     );
   }
 

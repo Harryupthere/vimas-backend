@@ -35,10 +35,11 @@ export class ProductsAdminController {
   findAll(
     @Query('page') pageStr: string = '1',
     @Query('limit') limitStr: string = '10',
+    @Query('search') search?: string,
   ) {
     const page = parseInt(pageStr);
     const limit = parseInt(limitStr);
-    return this.productsService.findAll(page, limit);
+    return this.productsService.findAll(page, limit, search);
   }
 
   @Get('products/:id')

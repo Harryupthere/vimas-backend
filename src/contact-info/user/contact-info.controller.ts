@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -26,8 +27,8 @@ export class ContactInfoController {
   }
 
   @Get()
-  findAll(@Req() req: any) {
-    return this.contactInfoService.findAllMine(req.user.id);
+  findAll(@Req() req: any, @Query('search') search?: string) {
+    return this.contactInfoService.findAllMine(req.user.id, search);
   }
 
   @Get(':id')

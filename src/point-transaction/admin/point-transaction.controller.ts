@@ -36,10 +36,12 @@ export class PointTransactionAdminController {
     @Query('limit') limit: string = '10',
     @Query('walletType') walletType?: string,
     @Query('walletId') walletId?: string,
+    @Query('search') search?: string,
   ) {
     return this.pointTransactionService.findAll(+page, +limit, {
       walletType,
       walletId: walletId ? +walletId : undefined,
+      search,
     });
   }
 

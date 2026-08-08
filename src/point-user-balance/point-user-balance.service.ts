@@ -39,13 +39,22 @@ export class PointUserBalanceService {
     }
   }
 
-  async findAll(page: number, limit: number) {
-    const [data, total] = await this.pointUserBalanceRepo.findAndCount({
-      relations: ['user'],
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+  async findAll(page: number, limit: number, search?: string) {
+    const query = this.pointUserBalanceRepo
+      .createQueryBuilder('balance')
+      .leftJoinAndSelect('balance.user', 'user')
+      .orderBy('balance.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere(
+        '(user.first_name LIKE :search OR user.last_name LIKE :search OR user.email LIKE :search OR user.unique_user_id LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {

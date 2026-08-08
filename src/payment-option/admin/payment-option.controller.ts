@@ -6,6 +6,7 @@ import {
   Param,
   Delete,
   Put,
+  Query,
   //UseGuards,
 } from '@nestjs/common';
 import { PaymentOptionsService } from '../payment-option.service';
@@ -21,8 +22,8 @@ export class PaymentOptionsController {
   }
 
   @Get('payment-options')
-  findAll() {
-    return this.paymentOptionsService.findAll();
+  findAll(@Query('search') search?: string) {
+    return this.paymentOptionsService.findAll(search);
   }
 
   @Get('payment-options/:id')

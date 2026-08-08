@@ -25,8 +25,19 @@ export class PaymentStatusService {
     };
   }
 
-  async findAll() {
-    const data = await this.paymentStatusRepo.find({ order: { id: 'ASC' } });
+  async findAll(search?: string) {
+    const query = this.paymentStatusRepo
+      .createQueryBuilder('paymentStatus')
+      .orderBy('paymentStatus.id', 'ASC');
+
+    if (search) {
+      query.andWhere(
+        '(paymentStatus.name LIKE :search OR paymentStatus.description LIKE :search OR paymentStatus.colour LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const data = await query.getMany();
     return { data, message: 'Payment statuses fetched successfully' };
   }
 
@@ -34,8 +45,7 @@ export class PaymentStatusService {
     const paymentStatus = await this.paymentStatusRepo.findOne({
       where: { id },
     });
-    if (!paymentStatus)
-      throw new NotFoundException('Payment status not found');
+    if (!paymentStatus) throw new NotFoundException('Payment status not found');
     return { data: paymentStatus, message: 'Payment status' };
   }
 
@@ -43,8 +53,7 @@ export class PaymentStatusService {
     const paymentStatus = await this.paymentStatusRepo.findOne({
       where: { id },
     });
-    if (!paymentStatus)
-      throw new NotFoundException('Payment status not found');
+    if (!paymentStatus) throw new NotFoundException('Payment status not found');
 
     Object.assign(paymentStatus, dto);
     await this.paymentStatusRepo.save(paymentStatus);
@@ -58,8 +67,7 @@ export class PaymentStatusService {
     const paymentStatus = await this.paymentStatusRepo.findOne({
       where: { id },
     });
-    if (!paymentStatus)
-      throw new NotFoundException('Payment status not found');
+    if (!paymentStatus) throw new NotFoundException('Payment status not found');
 
     try {
       await this.paymentStatusRepo.remove(paymentStatus);

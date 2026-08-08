@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { Get, Post, Body, Patch, Param, Query,Delete } from '@nestjs/common';
+import { Get, Post, Body, Patch, Param, Query, Delete } from '@nestjs/common';
 import { BrandService } from '../brand.service';
 import { CreateBrandDto } from '../dto/create-brand.dto';
 import { UpdateBrandDto } from '../dto/updte-brand.dto';
@@ -14,8 +14,9 @@ export class BrandController {
   findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
   ) {
-    return this.brandService.findAll(+page, +limit);
+    return this.brandService.findAll(+page, +limit, search);
   }
 
   // GET single brand by id
@@ -50,22 +51,13 @@ export class BrandController {
 
   // ADD mapping (category ↔ brand)
   @Post('brand-category/map')
-  async addMapping(
-    @Body() body: { categoryId: number; brandId: number },
-  ) {
-    return this.brandService.addMapping(
-      new CreateCategoryBrandDto(),
-    );
+  async addMapping(@Body() body: { categoryId: number; brandId: number }) {
+    return this.brandService.addMapping(new CreateCategoryBrandDto());
   }
 
   // REMOVE mapping (category ↔ brand)
   @Delete('brand-category/map')
-  async removeMapping(
-    @Body() body: { categoryId: number; brandId: number },
-  ) {
-    return this.brandService.removeMapping(
-      body.categoryId,
-      body.brandId,
-    );
+  async removeMapping(@Body() body: { categoryId: number; brandId: number }) {
+    return this.brandService.removeMapping(body.categoryId, body.brandId);
   }
 }

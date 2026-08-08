@@ -24,8 +24,9 @@ export class OrdersAdminController {
   findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
   ) {
-    return this.ordersService.findAll(+page, +limit);
+    return this.ordersService.findAll(+page, +limit, search);
   }
 
   @Get(':id')

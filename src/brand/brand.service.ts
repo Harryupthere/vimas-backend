@@ -36,12 +36,18 @@ export class BrandService {
   }
 
   // FIND ALL with pagination
-  async findAll(page = 1, limit = 10) {
-    const [data, total] = await this.brandRepo.findAndCount({
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { id: 'DESC' },
-    });
+  async findAll(page = 1, limit = 10, search?: string) {
+    const query = this.brandRepo
+      .createQueryBuilder('brand')
+      .orderBy('brand.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere('brand.name LIKE :search', { search: `%${search}%` });
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {
@@ -78,13 +84,17 @@ export class BrandService {
     return { message: 'brand updated successfully', data: brand };
   }
 
-
-
   // FIND ALL without pagination
-  async findAllNoPagination() {
-    const brands = await this.brandRepo.find({
-      order: { id: 'DESC' },
-    });
+  async findAllNoPagination(search?: string) {
+    const query = this.brandRepo
+      .createQueryBuilder('brand')
+      .orderBy('brand.id', 'DESC');
+
+    if (search) {
+      query.andWhere('brand.name LIKE :search', { search: `%${search}%` });
+    }
+
+    const brands = await query.getMany();
 
     return {
       data: brands,
@@ -121,7 +131,7 @@ export class BrandService {
       relations: ['brand'],
     });
 
-    return {data:mappings.map((m) => m.brand),message:"brands"};
+    return { data: mappings.map((m) => m.brand), message: 'brands' };
   }
 
   // Get categories for a brand
@@ -131,7 +141,7 @@ export class BrandService {
       relations: ['category'],
     });
 
-    return {data:mappings.map((m) => m.category),message:"categories"};
+    return { data: mappings.map((m) => m.category), message: 'categories' };
   }
 
   // Remove mapping

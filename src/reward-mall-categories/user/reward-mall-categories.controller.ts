@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { RewardMallCategoriesService } from '../reward-mall-categories.service';
@@ -17,8 +18,8 @@ export class RewardMallCategoriesUserController {
 
   // Buyers only ever browse active categories
   @Get()
-  findAll() {
-    return this.rewardMallCategoriesService.findAll(1);
+  findAll(@Query('search') search?: string) {
+    return this.rewardMallCategoriesService.findAll(1, search);
   }
 
   @Get(':id')

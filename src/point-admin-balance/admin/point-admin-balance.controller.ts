@@ -34,8 +34,9 @@ export class PointAdminBalanceAdminController {
   findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
   ) {
-    return this.pointAdminBalanceService.findAll(+page, +limit);
+    return this.pointAdminBalanceService.findAll(+page, +limit, search);
   }
 
   @Get(':id')

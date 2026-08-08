@@ -32,8 +32,14 @@ export class RewardMallPurchasesUserController {
     @Req() req: any,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
   ) {
-    return this.rewardMallPurchasesService.findMine(req.user.id, +page, +limit);
+    return this.rewardMallPurchasesService.findMine(
+      req.user.id,
+      +page,
+      +limit,
+      search,
+    );
   }
 
   @Get('my/:id')

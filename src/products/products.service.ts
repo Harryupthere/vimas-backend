@@ -190,20 +190,25 @@ export class ProductsService {
     return { data: product, message: 'Product created successfully' };
   }
 
-  async findAll(page: number, limit: number) {
-    const products = await this.productRepo.find({
-      relations: [
-        'category',
-        'brand',
-        'productMedia',
-        'paymentOptions',
-        'paymentOptions.paymentOption',
-      ],
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+  async findAll(page: number, limit: number, search?: string) {
+    const query = this.productRepo
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.brand', 'brand')
+      .leftJoinAndSelect('product.productMedia', 'productMedia')
+      .leftJoinAndSelect('product.paymentOptions', 'paymentOptions')
+      .leftJoinAndSelect('paymentOptions.paymentOption', 'paymentOption')
+      .skip((page - 1) * limit)
+      .take(limit);
 
-    const total = await this.productRepo.count();
+    if (search) {
+      query.andWhere(
+        '(product.name LIKE :search OR product.sub_title LIKE :search OR product.description LIKE :search OR product.search_keywords LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [products, total] = await query.getManyAndCount();
 
     const feedbackByProduct = await this.loadFeedbackByProduct(
       products.map((p) => p.id),
@@ -219,7 +224,12 @@ export class ProductsService {
     };
   }
 
-  async findAllProductsUsers(page: number, limit: number, type?: string) {
+  async findAllProductsUsers(
+    page: number,
+    limit: number,
+    type?: string,
+    search?: string,
+  ) {
     const query = this.productRepo
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
@@ -235,6 +245,13 @@ export class ProductsService {
       query.andWhere('product.bulk_available = :bulkAvailable', {
         bulkAvailable: 1,
       });
+    }
+
+    if (search) {
+      query.andWhere(
+        '(product.name LIKE :search OR product.sub_title LIKE :search OR product.description LIKE :search OR product.search_keywords LIKE :search)',
+        { search: `%${search}%` },
+      );
     }
 
     const [products, total] = await query.getManyAndCount();

@@ -10,6 +10,7 @@ import { PointUserBalance } from '../shared/entities/point-user-balance.entity';
 import { RewardMallProductsService } from './reward-mall-products.service';
 import { RewardMallProductsAdminController } from './admin/reward-mall-products.controller';
 import { RewardMallProductsUserController } from './user/reward-mall-products.controller';
+import { RewardMallProductsPublicController } from './public/reward-mall-products.controller';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { RewardMallProductsUserController } from './user/reward-mall-products.co
   controllers: [
     RewardMallProductsAdminController,
     RewardMallProductsUserController,
+    RewardMallProductsPublicController,
   ],
   exports: [RewardMallProductsService],
 })

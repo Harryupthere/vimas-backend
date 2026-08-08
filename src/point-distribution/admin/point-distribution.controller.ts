@@ -31,8 +31,8 @@ export class PointDistributionAdminController {
   }
 
   @Get()
-  findAll(@Query('status') status?: string) {
-    return this.pointDistributionService.findAll(status);
+  findAll(@Query('status') status?: string, @Query('search') search?: string) {
+    return this.pointDistributionService.findAll(status, search);
   }
 
   @Get(':id')

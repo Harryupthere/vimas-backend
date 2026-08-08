@@ -23,19 +23,31 @@ export class ContactInfoService {
       return { data: saved, message: 'Contact info created successfully' };
     } catch (err: any) {
       if (err.code === 'ER_DUP_ENTRY') {
-        throw new ConflictException(
-          'This phone number is already registered',
-        );
+        throw new ConflictException('This phone number is already registered');
       }
       throw err;
     }
   }
 
-  async findAllMine(userId: number) {
-    const data = await this.contactInfoRepo.find({
-      where: { userId },
-      order: { id: 'DESC' },
-    });
+  async findAllMine(userId: number, search?: string) {
+    const query = this.contactInfoRepo
+      .createQueryBuilder('contactInfo')
+      .where('contactInfo.user_id = :userId', { userId })
+      .orderBy('contactInfo.id', 'DESC');
+
+    if (search) {
+      query.andWhere(
+        `(contactInfo.address_1 LIKE :search
+          OR contactInfo.address_2 LIKE :search
+          OR contactInfo.landmark LIKE :search
+          OR contactInfo.state LIKE :search
+          OR contactInfo.country LIKE :search
+          OR contactInfo.phone_number LIKE :search)`,
+        { search: `%${search}%` },
+      );
+    }
+
+    const data = await query.getMany();
     return { data, message: 'Contact info fetched successfully' };
   }
 
@@ -60,9 +72,7 @@ export class ContactInfoService {
       return { data: saved, message: 'Contact info updated successfully' };
     } catch (err: any) {
       if (err.code === 'ER_DUP_ENTRY') {
-        throw new ConflictException(
-          'This phone number is already registered',
-        );
+        throw new ConflictException('This phone number is already registered');
       }
       throw err;
     }

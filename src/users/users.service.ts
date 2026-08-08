@@ -23,6 +23,11 @@ import { UserSession } from '../shared/entities/user_session.entity';
 import { v4 as uuidv4 } from 'uuid';
 import { EmailService } from 'src/email/email.service';
 import { PointUserBalance } from 'src/shared/entities/point-user-balance.entity';
+import {
+  PointTransaction,
+  PointTransactionType,
+} from 'src/shared/entities/point-transaction.entity';
+import { Order } from 'src/shared/entities/order.entity';
 
 @Injectable()
 export class UsersService {
@@ -41,6 +46,10 @@ export class UsersService {
     private readonly userSessionStorageRepo: Repository<UserSessionStorage>,
     @InjectRepository(PointUserBalance)
     private readonly pointUserBalancesRepo: Repository<PointUserBalance>,
+    @InjectRepository(PointTransaction)
+    private readonly pointTransactionRepo: Repository<PointTransaction>,
+    @InjectRepository(Order)
+    private readonly orderRepo: Repository<Order>,
     private readonly emailService: EmailService,
 
     private readonly jwtService: JwtService,
@@ -900,5 +909,160 @@ export class UsersService {
     await this.userRepo.save(user);
 
     return { message: 'Password has been reset successfully' };
+  }
+
+  // "my team" — one endpoint covering both referral levels, picked via
+  // `level`. Level 1 = users I directly referred; level 2 = users referred
+  // by my level-1 referrals (points only flow 2 levels up, so we never go
+  // deeper). For each teammate we surface how many paid orders they placed
+  // and how many points I personally earned off their purchases, so the
+  // frontend can render its level-1/level-2 tables off the same shape.
+  async getMyTeam(
+    userId: number,
+    level: number,
+    page: number,
+    limit: number,
+    search?: string,
+  ) {
+    const normalizedLevel = level === 2 ? 2 : 1;
+
+    let parentIds: number[] = [userId];
+    if (normalizedLevel === 2) {
+      const level1Users = await this.userRepo.find({
+        where: { referral: { id: userId } },
+        select: ['id'],
+      });
+      parentIds = level1Users.map((u) => Number(u.id));
+
+      // no level-1 referrals => no level-2 team either, short-circuit
+      // before touching orders/point_transactions at all
+      if (!parentIds.length) {
+        return {
+          data: {
+            level: normalizedLevel,
+            team: [],
+            page,
+            limit,
+            total: 0,
+            total_pages: 0,
+            totalPointsEarned: 0,
+          },
+          message: 'Team members fetched successfully',
+        };
+      }
+    }
+
+    const query = this.userRepo
+      .createQueryBuilder('user')
+      .where('user.referral_id IN (:...parentIds)', { parentIds })
+      .orderBy('user.created_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere(
+        `(user.first_name LIKE :search
+          OR user.last_name LIKE :search
+          OR user.email LIKE :search
+          OR user.unique_user_id LIKE :search
+          OR user.phone_number LIKE :search)`,
+        { search: `%${search}%` },
+      );
+    }
+
+    const [members, total] = await query.getManyAndCount();
+    const memberIds = members.map((m) => Number(m.id));
+
+    const [purchaseRows, earningRows, balanceRows, totalEarnedResult] =
+      await Promise.all([
+        memberIds.length
+          ? this.orderRepo
+              .createQueryBuilder('order')
+              .select('order.buyer_id', 'buyerId')
+              .addSelect('COUNT(*)', 'count')
+              .where('order.buyer_id IN (:...memberIds)', { memberIds })
+              .andWhere('order.payment_status_id = :paid', { paid: 2 })
+              .groupBy('order.buyer_id')
+              .getRawMany<{ buyerId: string; count: string }>()
+          : [],
+        memberIds.length
+          ? this.pointTransactionRepo
+              .createQueryBuilder('pt')
+              .select('pt.source_user_id', 'sourceUserId')
+              .addSelect('SUM(pt.amount)', 'total')
+              .where('pt.receiver_user_id = :userId', { userId })
+              .andWhere('pt.source_user_id IN (:...memberIds)', {
+                memberIds,
+              })
+              .andWhere('pt.transaction_type = :type', {
+                type: PointTransactionType.CREDIT,
+              })
+              .groupBy('pt.source_user_id')
+              .getRawMany<{ sourceUserId: string; total: string }>()
+          : [],
+        // each teammate's own current wallet balance — how many points
+        // *they* are holding right now, not what you earned off them
+        memberIds.length
+          ? this.pointUserBalancesRepo
+              .createQueryBuilder('balance')
+              .select('balance.user_id', 'userId')
+              .addSelect('balance.current_balance', 'currentBalance')
+              .where('balance.user_id IN (:...memberIds)', { memberIds })
+              .getRawMany<{ userId: string; currentBalance: string }>()
+          : [],
+        // level-wide earnings total (every member of this level, independent
+        // of the current page/search) so the frontend can show a summary
+        // figure above the paginated table
+        this.pointTransactionRepo
+          .createQueryBuilder('pt')
+          .innerJoin(User, 'u', 'u.id = pt.source_user_id')
+          .select('COALESCE(SUM(pt.amount), 0)', 'total')
+          .where('pt.receiver_user_id = :userId', { userId })
+          .andWhere('u.referral_id IN (:...parentIds)', { parentIds })
+          .andWhere('pt.transaction_type = :type', {
+            type: PointTransactionType.CREDIT,
+          })
+          .getRawOne<{ total: string }>(),
+      ]);
+
+    const purchasesByUser = new Map<number, number>();
+    for (const row of purchaseRows) {
+      purchasesByUser.set(Number(row.buyerId), Number(row.count));
+    }
+
+    const earningsByUser = new Map<number, number>();
+    for (const row of earningRows) {
+      earningsByUser.set(Number(row.sourceUserId), Number(row.total));
+    }
+
+    const balanceByUser = new Map<number, number>();
+    for (const row of balanceRows) {
+      balanceByUser.set(Number(row.userId), Number(row.currentBalance));
+    }
+
+    const team = members.map((member) => ({
+      id: Number(member.id),
+      uniqueUserId: member.unique_user_id,
+      name: [member.first_name, member.last_name].filter(Boolean).join(' '),
+      email: member.email,
+      phoneNumber: member.phone_number,
+      joinedAt: member.created_at,
+      productsPurchased: purchasesByUser.get(Number(member.id)) ?? 0,
+      pointsEarnedFromThem: earningsByUser.get(Number(member.id)) ?? 0,
+      pointsBalance: balanceByUser.get(Number(member.id)) ?? 0,
+    }));
+
+    return {
+      data: {
+        level: normalizedLevel,
+        team,
+        page,
+        limit,
+        total,
+        total_pages: Math.ceil(total / limit),
+        totalPointsEarned: Number(totalEarnedResult?.total ?? 0),
+      },
+      message: 'Team members fetched successfully',
+    };
   }
 }

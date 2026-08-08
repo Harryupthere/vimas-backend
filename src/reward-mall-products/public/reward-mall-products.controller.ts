@@ -1,25 +1,18 @@
-import {
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { RewardMallProductsService } from '../reward-mall-products.service';
-import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 
-@UseGuards(JwtAuthGuard)
-@Controller('reward-mall-products')
-export class RewardMallProductsUserController {
+// Public listing — no auth required, so there's no req.user to scope
+// purchasedQuantity/maxPurchaseReached against. findAllUsers already treats
+// userId as optional and falls back those fields to 0/false in that case,
+// so this just calls it with userId omitted.
+@Controller('public/reward-mall-products')
+export class RewardMallProductsPublicController {
   constructor(
     private readonly rewardMallProductsService: RewardMallProductsService,
   ) {}
 
   @Get()
   findAll(
-    @Req() req: any,
     @Query('page') pageStr: string = '1',
     @Query('limit') limitStr: string = '10',
     @Query('categoryId') categoryId?: string,
@@ -29,13 +22,8 @@ export class RewardMallProductsUserController {
       +pageStr,
       +limitStr,
       categoryId ? +categoryId : undefined,
-      req.user.id,
+      undefined,
       search,
     );
-  }
-
-  @Get(':id')
-  findOne(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
-    return this.rewardMallProductsService.findOneUsers(id, req.user.id);
   }
 }

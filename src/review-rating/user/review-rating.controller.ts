@@ -31,13 +31,19 @@ export class ReviewRatingController {
     @Param('productId', ParseIntPipe) productId: number,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
   ) {
-    return this.reviewRatingService.findForProduct(productId, +page, +limit);
+    return this.reviewRatingService.findForProduct(
+      productId,
+      +page,
+      +limit,
+      search,
+    );
   }
 
   @Get('my')
-  findMine(@Req() req: any) {
-    return this.reviewRatingService.findMine(req.user.id);
+  findMine(@Req() req: any, @Query('search') search?: string) {
+    return this.reviewRatingService.findMine(req.user.id, search);
   }
 
   @Patch(':id')

@@ -83,18 +83,31 @@ export class RewardMallProductsService {
     limit: number,
     categoryId?: number,
     status?: number,
+    search?: string,
   ) {
-    const where: any = {};
-    if (categoryId) where.categoryId = categoryId;
-    if (status !== undefined) where.status = status;
+    const query = this.productRepo
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.media', 'media')
+      .orderBy('product.sortOrder', 'ASC')
+      .addOrderBy('product.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
 
-    const [products, total] = await this.productRepo.findAndCount({
-      where,
-      relations: ['category', 'media'],
-      order: { sortOrder: 'ASC', id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    if (categoryId) {
+      query.andWhere('product.category_id = :categoryId', { categoryId });
+    }
+    if (status !== undefined) {
+      query.andWhere('product.status = :status', { status });
+    }
+    if (search) {
+      query.andWhere(
+        '(product.name LIKE :search OR product.sub_title LIKE :search OR product.description LIKE :search OR product.search_keywords LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [products, total] = await query.getManyAndCount();
 
     return {
       data: {
@@ -126,17 +139,29 @@ export class RewardMallProductsService {
     limit: number,
     categoryId?: number,
     userId?: number,
+    search?: string,
   ) {
-    const where: any = { status: 1 };
-    if (categoryId) where.categoryId = categoryId;
+    const query = this.productRepo
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.media', 'media')
+      .where('product.status = :status', { status: 1 })
+      .orderBy('product.sortOrder', 'ASC')
+      .addOrderBy('product.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
 
-    const [products, total] = await this.productRepo.findAndCount({
-      where,
-      relations: ['category', 'media'],
-      order: { sortOrder: 'ASC', id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    if (categoryId) {
+      query.andWhere('product.category_id = :categoryId', { categoryId });
+    }
+    if (search) {
+      query.andWhere(
+        '(product.name LIKE :search OR product.sub_title LIKE :search OR product.description LIKE :search OR product.search_keywords LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [products, total] = await query.getManyAndCount();
 
     const purchasedByProduct = userId
       ? await this.getPurchasedQuantities(

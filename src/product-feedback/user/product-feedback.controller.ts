@@ -33,11 +33,13 @@ export class ProductFeedbackController {
     @Param('productId', ParseIntPipe) productId: number,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
   ) {
     return this.productFeedbackService.findForProduct(
       productId,
       +page,
       +limit,
+      search,
     );
   }
 
@@ -46,8 +48,14 @@ export class ProductFeedbackController {
     @Req() req: any,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
   ) {
-    return this.productFeedbackService.findMine(req.user.id, +page, +limit);
+    return this.productFeedbackService.findMine(
+      req.user.id,
+      +page,
+      +limit,
+      search,
+    );
   }
 
   @Get(':id/replies')
@@ -55,8 +63,9 @@ export class ProductFeedbackController {
     @Param('id', ParseIntPipe) id: number,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
   ) {
-    return this.productFeedbackService.findReplies(id, +page, +limit);
+    return this.productFeedbackService.findReplies(id, +page, +limit, search);
   }
 
   @Patch(':id')

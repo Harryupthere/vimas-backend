@@ -35,8 +35,9 @@ export class OrdersController {
     @Req() req: any,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
   ) {
-    return this.ordersService.findMyOrders(req.user.id, +page, +limit);
+    return this.ordersService.findMyOrders(req.user.id, +page, +limit, search);
   }
 
   @Get('my/:id')

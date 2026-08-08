@@ -18,15 +18,26 @@ export class PointPoolService {
     return { data: pointPool, message: 'Point pool created successfully' };
   }
 
-  async findAll(page: number, limit: number, status?: string) {
-    const where = status ? { status: status as any } : {};
-    const [data, total] = await this.pointPoolRepo.findAndCount({
-      where,
-      relations: ['poolDetail'],
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+  async findAll(page: number, limit: number, status?: string, search?: string) {
+    const query = this.pointPoolRepo
+      .createQueryBuilder('pointPool')
+      .leftJoinAndSelect('pointPool.poolDetail', 'poolDetail')
+      .orderBy('pointPool.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (status) {
+      query.andWhere('pointPool.status = :status', { status });
+    }
+
+    if (search) {
+      query.andWhere(
+        '(poolDetail.name LIKE :search OR poolDetail.description LIKE :search OR poolDetail.symbol LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {

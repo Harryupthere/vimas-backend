@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { RewardMallPurchaseStatusService } from '../reward-mall-purchase-status.service';
@@ -30,8 +31,8 @@ export class RewardMallPurchaseStatusAdminController {
   }
 
   @Get()
-  findAll() {
-    return this.statusService.findAll();
+  findAll(@Query('search') search?: string) {
+    return this.statusService.findAll(search);
   }
 
   @Get(':id')

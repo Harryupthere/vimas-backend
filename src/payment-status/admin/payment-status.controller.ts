@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { PaymentStatusService } from '../payment-status.service';
@@ -28,8 +29,8 @@ export class PaymentStatusAdminController {
   }
 
   @Get()
-  findAll() {
-    return this.paymentStatusService.findAll();
+  findAll(@Query('search') search?: string) {
+    return this.paymentStatusService.findAll(search);
   }
 
   @Get(':id')

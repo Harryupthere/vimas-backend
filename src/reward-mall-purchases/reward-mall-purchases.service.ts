@@ -152,14 +152,24 @@ export class RewardMallPurchasesService {
     });
   }
 
-  async findMine(userId: number, page: number, limit: number) {
-    const [data, total] = await this.purchaseRepo.findAndCount({
-      where: { userId },
-      relations: ['product', 'status'],
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+  async findMine(userId: number, page: number, limit: number, search?: string) {
+    const query = this.purchaseRepo
+      .createQueryBuilder('purchase')
+      .leftJoinAndSelect('purchase.product', 'product')
+      .leftJoinAndSelect('purchase.status', 'status')
+      .where('purchase.user_id = :userId', { userId })
+      .orderBy('purchase.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search) {
+      query.andWhere(
+        '(product.name LIKE :search OR purchase.tracking_number LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {
@@ -188,19 +198,38 @@ export class RewardMallPurchasesService {
   async findAll(
     page: number,
     limit: number,
-    filters?: { userId?: number; statusId?: number },
+    filters?: { userId?: number; statusId?: number; search?: string },
   ) {
-    const where: any = {};
-    if (filters?.userId) where.userId = filters.userId;
-    if (filters?.statusId) where.statusId = filters.statusId;
+    const query = this.purchaseRepo
+      .createQueryBuilder('purchase')
+      .leftJoinAndSelect('purchase.user', 'user')
+      .leftJoinAndSelect('purchase.product', 'product')
+      .leftJoinAndSelect('purchase.status', 'status')
+      .orderBy('purchase.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
 
-    const [data, total] = await this.purchaseRepo.findAndCount({
-      where,
-      relations: ['user', 'product', 'status'],
-      order: { id: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    if (filters?.userId) {
+      query.andWhere('purchase.user_id = :userId', { userId: filters.userId });
+    }
+    if (filters?.statusId) {
+      query.andWhere('purchase.status_id = :statusId', {
+        statusId: filters.statusId,
+      });
+    }
+    if (filters?.search) {
+      query.andWhere(
+        `(product.name LIKE :search
+          OR purchase.tracking_number LIKE :search
+          OR user.first_name LIKE :search
+          OR user.last_name LIKE :search
+          OR user.email LIKE :search
+          OR user.unique_user_id LIKE :search)`,
+        { search: `%${filters.search}%` },
+      );
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data: {

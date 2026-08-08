@@ -21,12 +21,24 @@ export class PointDistributionService {
     };
   }
 
-  async findAll(status?: string) {
-    const where = status ? { status: status as any } : {};
-    const data = await this.pointDistributionRepo.find({
-      where,
-      order: { priority: 'ASC', id: 'DESC' },
-    });
+  async findAll(status?: string, search?: string) {
+    const query = this.pointDistributionRepo
+      .createQueryBuilder('pointDistribution')
+      .orderBy('pointDistribution.priority', 'ASC')
+      .addOrderBy('pointDistribution.id', 'DESC');
+
+    if (status) {
+      query.andWhere('pointDistribution.status = :status', { status });
+    }
+
+    if (search) {
+      query.andWhere(
+        '(pointDistribution.name LIKE :search OR pointDistribution.description LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const data = await query.getMany();
     return { data, message: 'Point distribution rules fetched successfully' };
   }
 

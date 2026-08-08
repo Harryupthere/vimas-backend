@@ -56,15 +56,24 @@ export class ProductBulkDetailsService {
   }
 
   // admin listing — optionally scoped to a product and/or status
-  async findAll(productId?: number, status?: number) {
-    const where: any = {};
-    if (productId) where.productId = productId;
-    if (status !== undefined) where.status = status;
+  async findAll(productId?: number, status?: number, search?: string) {
+    const query = this.bulkDetailRepo
+      .createQueryBuilder('bulkDetail')
+      .leftJoinAndSelect('bulkDetail.product', 'product')
+      .orderBy('bulkDetail.sort_order', 'ASC')
+      .addOrderBy('bulkDetail.package_quantity', 'ASC');
 
-    const data = await this.bulkDetailRepo.find({
-      where,
-      order: { sortOrder: 'ASC', packageQuantity: 'ASC' },
-    });
+    if (productId) {
+      query.andWhere('bulkDetail.product_id = :productId', { productId });
+    }
+    if (status !== undefined) {
+      query.andWhere('bulkDetail.status = :status', { status });
+    }
+    if (search) {
+      query.andWhere('product.name LIKE :search', { search: `%${search}%` });
+    }
+
+    const data = await query.getMany();
     return { data, message: 'Product bulk details fetched successfully' };
   }
 

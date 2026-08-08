@@ -22,8 +22,19 @@ export class OrderStatusService {
     return { data: orderStatus, message: 'Order status created successfully' };
   }
 
-  async findAll() {
-    const data = await this.orderStatusRepo.find({ order: { id: 'ASC' } });
+  async findAll(search?: string) {
+    const query = this.orderStatusRepo
+      .createQueryBuilder('orderStatus')
+      .orderBy('orderStatus.id', 'ASC');
+
+    if (search) {
+      query.andWhere(
+        '(orderStatus.name LIKE :search OR orderStatus.description LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const data = await query.getMany();
     return { data, message: 'Order statuses fetched successfully' };
   }
 

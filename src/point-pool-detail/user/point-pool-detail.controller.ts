@@ -8,8 +8,8 @@ export class PointPoolDetailUserController {
   ) {}
 
   @Get()
-  findAll(@Query('status') status?: string) {
-    return this.pointPoolDetailService.findAll(status);
+  findAll(@Query('status') status?: string, @Query('search') search?: string) {
+    return this.pointPoolDetailService.findAll(status, search);
   }
 
   @Get(':id')

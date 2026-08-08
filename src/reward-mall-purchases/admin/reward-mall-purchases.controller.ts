@@ -28,10 +28,12 @@ export class RewardMallPurchasesAdminController {
     @Query('limit') limit: string = '10',
     @Query('userId') userId?: string,
     @Query('statusId') statusId?: string,
+    @Query('search') search?: string,
   ) {
     return this.rewardMallPurchasesService.findAll(+page, +limit, {
       userId: userId ? +userId : undefined,
       statusId: statusId ? +statusId : undefined,
+      search,
     });
   }
 
