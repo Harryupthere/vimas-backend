@@ -18,6 +18,11 @@ import { StripeService } from '../stripe/stripe.service';
 import { CheckoutDto } from './dto/checkout.dto';
 import { AdminUpdateOrderDto } from './dto/admin-update-order.dto';
 import { PointDistributionPurchaseQueue } from '../shared/entities/point-distribution-purchase-queue.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import {
+  NotificationCategoryName,
+  NotificationTypeName,
+} from '../notifications/notification-names';
 const PENDING_PAYMENT_STATUS_ID = 1;
 const PAID_PAYMENT_STATUS_ID = 2;
 const FAILED_PAYMENT_STATUS_ID = 3;
@@ -49,6 +54,7 @@ export class OrdersService {
     private readonly pointDistributionQueue: Queue,
 
     private readonly stripeService: StripeService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async checkout(buyerId: number, dto: CheckoutDto) {
@@ -299,6 +305,18 @@ export class OrdersService {
           product: { id: order.productId },
         });
 
+        // best-effort — a notification failure must never block payment
+        // reconciliation or point-distribution queuing
+        void this.notificationsService.notifyUser({
+          userId: order.buyerId,
+          categoryName: NotificationCategoryName.ORDERS,
+          typeName: NotificationTypeName.SUCCESS,
+          heading: 'Order confirmed',
+          subheading: `Your payment for order #${order.id} was successful.`,
+          route: `/orders/${order.id}`,
+          data: { orderId: order.id },
+        });
+
         // totalPoints/remainingPoints start at 0 — the worker looks up the
         // live point_distributions rates and fills these in once it starts
         // processing (see PointDistributionQueueService.processPurchase).
@@ -455,12 +473,33 @@ export class OrdersService {
     const order = await this.orderRepo.findOne({ where: { id } });
     if (!order) throw new NotFoundException('Order not found');
 
+    const orderStatusChanged =
+      dto.orderStatusId !== undefined &&
+      dto.orderStatusId !== order.orderStatusId;
+
     if (dto.orderStatusId !== undefined)
       order.orderStatusId = dto.orderStatusId;
     if (dto.paymentStatusId !== undefined)
       order.paymentStatusId = dto.paymentStatusId;
 
     await this.orderRepo.save(order);
+
+    if (orderStatusChanged) {
+      const updated = await this.orderRepo.findOne({
+        where: { id },
+        relations: ['orderStatus'],
+      });
+      void this.notificationsService.notifyUser({
+        userId: order.buyerId,
+        categoryName: NotificationCategoryName.ORDERS,
+        typeName: NotificationTypeName.GENERAL,
+        heading: 'Order status updated',
+        subheading: `Your order #${order.id} is now "${updated?.orderStatus?.name ?? 'updated'}".`,
+        route: `/orders/${order.id}`,
+        data: { orderId: order.id, orderStatusId: order.orderStatusId },
+      });
+    }
+
     return { data: order, message: 'Order updated successfully' };
   }
 }

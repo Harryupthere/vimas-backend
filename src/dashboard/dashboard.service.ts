@@ -1,18 +1,45 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { PointUserBalance } from '../shared/entities/point-user-balance.entity';
 import {
   PointTransaction,
   PointTransactionType,
   PointTransactionReason,
+  PointWalletType,
 } from '../shared/entities/point-transaction.entity';
 import { Order } from '../shared/entities/order.entity';
+import { RewardMallPurchase } from '../shared/entities/reward-mall-purchase.entity';
+import { User } from '../shared/entities/user.entity';
 
 // Matches OrdersService's own (unexported) convention: payment_status id 2
 // is "Paid" — the trend graph counts a paid order as a "purchase", not
 // every order row (which also includes pending/failed/abandoned ones).
 const PAID_PAYMENT_STATUS_ID = 2;
+
+// "Recent activities" is a merge of 4 independently-paginated sources
+// (orders, reward mall purchases, point transactions, teammate joins) that
+// has no single underlying table to ORDER BY/LIMIT against. Rather than
+// re-fetching a growing window per requested page (cost scaling with page
+// number), each source is capped at its most recent N rows, merged,
+// sorted, and paginated in memory — bounded, predictable cost regardless
+// of which page is requested. Practically: this is a recency feed, not a
+// full history browser — for exhaustive history of one source, the
+// dedicated /orders/my, /reward-mall-purchases/my, /point-transaction/my,
+// /users/my-team endpoints already page through their single source in
+// full.
+const RECENT_ACTIVITY_WINDOW = 100;
+
+export interface ActivityItem {
+  type: 'order' | 'reward_mall_purchase' | 'point_transaction' | 'teammate';
+  id: number;
+  heading: string;
+  subheading: string;
+  amount: number | null;
+  route: string;
+  createdAt: Date;
+  data: Record<string, any>;
+}
 
 const MONTH_LABELS = [
   'Jan',
@@ -38,6 +65,10 @@ export class DashboardService {
     private readonly pointTransactionRepo: Repository<PointTransaction>,
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
+    @InjectRepository(RewardMallPurchase)
+    private readonly rewardMallPurchaseRepo: Repository<RewardMallPurchase>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
   ) {}
 
   // Last 6 calendar months (oldest first), including the current
@@ -201,6 +232,261 @@ export class DashboardService {
         trend,
       },
       message: 'Dashboard fetched successfully',
+    };
+  }
+
+  // Level 1 = direct referrals of userId; level 2 = referrals of those
+  // referrals. Returns the most recently joined RECENT_ACTIVITY_WINDOW
+  // across both levels combined, each with a live snapshot of how many
+  // points the requesting user has earned from them and how many paid
+  // orders they've placed — same computation as UsersService.getMyTeam,
+  // just merged across levels instead of split by one.
+  private async getRecentTeammates(userId: number): Promise<ActivityItem[]> {
+    const level1Users = await this.userRepo.find({
+      where: { referral: { id: userId } },
+      order: { created_at: 'DESC' },
+      take: RECENT_ACTIVITY_WINDOW,
+    });
+    const level1Ids = level1Users.map((u) => Number(u.id));
+
+    const level2Users = level1Ids.length
+      ? await this.userRepo.find({
+          where: { referral: { id: In(level1Ids) } },
+          relations: ['referral'],
+          order: { created_at: 'DESC' },
+          take: RECENT_ACTIVITY_WINDOW,
+        })
+      : [];
+
+    const teammates = [
+      ...level1Users.map((u) => ({
+        user: u,
+        level: 1 as const,
+        referrerName: 'You',
+      })),
+      ...level2Users.map((u) => ({
+        user: u,
+        level: 2 as const,
+        referrerName:
+          [u.referral?.first_name, u.referral?.last_name]
+            .filter(Boolean)
+            .join(' ') ||
+          u.referral?.unique_user_id ||
+          'your teammate',
+      })),
+    ]
+      .sort(
+        (a, b) =>
+          new Date(b.user.created_at).getTime() -
+          new Date(a.user.created_at).getTime(),
+      )
+      .slice(0, RECENT_ACTIVITY_WINDOW);
+
+    const teammateIds = teammates.map((t) => Number(t.user.id));
+    if (!teammateIds.length) return [];
+
+    const [purchaseRows, earningRows] = await Promise.all([
+      this.orderRepo
+        .createQueryBuilder('order')
+        .select('order.buyer_id', 'buyerId')
+        .addSelect('COUNT(*)', 'count')
+        .where('order.buyer_id IN (:...teammateIds)', { teammateIds })
+        .andWhere('order.payment_status_id = :paid', {
+          paid: PAID_PAYMENT_STATUS_ID,
+        })
+        .groupBy('order.buyer_id')
+        .getRawMany<{ buyerId: string; count: string }>(),
+
+      this.pointTransactionRepo
+        .createQueryBuilder('pt')
+        .select('pt.source_user_id', 'sourceUserId')
+        .addSelect('SUM(pt.amount)', 'total')
+        .where('pt.receiver_user_id = :userId', { userId })
+        .andWhere('pt.source_user_id IN (:...teammateIds)', { teammateIds })
+        .andWhere('pt.transaction_type = :type', {
+          type: PointTransactionType.CREDIT,
+        })
+        .groupBy('pt.source_user_id')
+        .getRawMany<{ sourceUserId: string; total: string }>(),
+    ]);
+
+    const purchasesByUser = new Map<number, number>();
+    for (const row of purchaseRows) {
+      purchasesByUser.set(Number(row.buyerId), Number(row.count));
+    }
+    const earningsByUser = new Map<number, number>();
+    for (const row of earningRows) {
+      earningsByUser.set(Number(row.sourceUserId), Number(row.total));
+    }
+
+    return teammates.map(({ user, level, referrerName }) => {
+      const name =
+        [user.first_name, user.last_name].filter(Boolean).join(' ') ||
+        user.unique_user_id;
+      const earnings = earningsByUser.get(Number(user.id)) ?? 0;
+      const purchases = purchasesByUser.get(Number(user.id)) ?? 0;
+
+      return {
+        type: 'teammate',
+        id: Number(user.id),
+        heading: `${name} joined your team (Level ${level})`,
+        subheading:
+          level === 1
+            ? `Direct referral · Earned ${earnings} points from ${purchases} purchase(s) so far`
+            : `Referred by ${referrerName} · Earned ${earnings} points from ${purchases} purchase(s) so far`,
+        amount: earnings,
+        route: `/users/my-team?level=${level}`,
+        createdAt: user.created_at,
+        data: {
+          userId: Number(user.id),
+          level,
+          referrerName,
+          pointsEarnedFromThem: earnings,
+          productsPurchased: purchases,
+        },
+      };
+    });
+  }
+
+  // Single merged, latest-first feed of everything the user would want to
+  // see under "recent activity": their own orders, reward mall
+  // redemptions, point transactions, and teammates joining their referral
+  // network. See RECENT_ACTIVITY_WINDOW for the per-source recency cap
+  // this is built from.
+  async getRecentActivities(userId: number, page: number, limit: number) {
+    const wallet = await this.pointUserBalanceRepo.findOne({
+      where: { userId },
+    });
+
+    const [orders, purchases, transactions, teammateActivities] =
+      await Promise.all([
+        this.orderRepo
+          .createQueryBuilder('order')
+          .leftJoinAndSelect('order.product', 'product')
+          .leftJoinAndSelect('order.orderStatus', 'orderStatus')
+          .where('order.buyer_id = :userId', { userId })
+          // Entity property name, not the raw DB column (`created_at`) —
+          // TypeORM's paginated-query-with-joins strategy (skip/take +
+          // any join) re-resolves ORDER BY columns via property path, so
+          // a raw snake_case name here crashes with "Cannot read
+          // properties of undefined (reading 'databaseName')".
+          .orderBy('order.createdAt', 'DESC')
+          .take(RECENT_ACTIVITY_WINDOW)
+          .getMany(),
+
+        this.rewardMallPurchaseRepo
+          .createQueryBuilder('purchase')
+          .leftJoinAndSelect('purchase.product', 'product')
+          .leftJoinAndSelect('purchase.status', 'status')
+          .where('purchase.user_id = :userId', { userId })
+          .orderBy('purchase.createdAt', 'DESC')
+          .take(RECENT_ACTIVITY_WINDOW)
+          .getMany(),
+
+        wallet
+          ? this.pointTransactionRepo
+              .createQueryBuilder('pt')
+              .leftJoinAndSelect('pt.sourceUser', 'sourceUser')
+              .where('pt.wallet_type = :walletType', {
+                walletType: PointWalletType.USER,
+              })
+              .andWhere('pt.wallet_id = :walletId', { walletId: wallet.id })
+              .orderBy('pt.createdAt', 'DESC')
+              .take(RECENT_ACTIVITY_WINDOW)
+              .getMany()
+          : Promise.resolve([]),
+
+        this.getRecentTeammates(userId),
+      ]);
+
+    const orderActivities: ActivityItem[] = orders.map((order) => ({
+      type: 'order',
+      id: order.id,
+      heading: `Order placed — ${order.product?.name ?? 'Product'}`,
+      subheading: `Qty ${order.quantity} · Status: ${order.orderStatus?.name ?? 'Pending'}`,
+      amount: Number(order.totalAmount),
+      route: `/orders/my/${order.id}`,
+      createdAt: order.createdAt,
+      data: {
+        orderId: order.id,
+        productId: order.productId,
+        quantity: order.quantity,
+        orderStatus: order.orderStatus?.name ?? null,
+      },
+    }));
+
+    const purchaseActivities: ActivityItem[] = purchases.map((purchase) => ({
+      type: 'reward_mall_purchase',
+      id: purchase.id,
+      heading: `Redeemed — ${purchase.product?.name ?? 'Reward'}`,
+      subheading: `${Number(purchase.pointsRedeemed)} points · Status: ${purchase.status?.name ?? 'Pending'}`,
+      amount: Number(purchase.pointsRedeemed),
+      route: `/reward-mall-purchases/my/${purchase.id}`,
+      createdAt: purchase.createdAt,
+      data: {
+        purchaseId: purchase.id,
+        productId: purchase.rewardMallProductId,
+        quantity: purchase.quantity,
+        status: purchase.status?.name ?? null,
+      },
+    }));
+
+    const transactionActivities: ActivityItem[] = transactions.map((t) => {
+      const isCredit = t.transactionType === PointTransactionType.CREDIT;
+      const sourceName =
+        t.sourceUserId && t.sourceUserId !== userId
+          ? [t.sourceUser?.first_name, t.sourceUser?.last_name]
+              .filter(Boolean)
+              .join(' ') ||
+            t.sourceUser?.unique_user_id ||
+            null
+          : null;
+
+      return {
+        type: 'point_transaction',
+        id: t.id,
+        heading: isCredit
+          ? `Earned ${Number(t.amount)} points`
+          : `Spent ${Number(t.amount)} points`,
+        subheading: sourceName
+          ? `From ${sourceName}'s purchase — ${t.transactionReason}`
+          : t.remarks || t.transactionReason,
+        amount: isCredit ? Number(t.amount) : -Number(t.amount),
+        route: `/point-transaction/my/${t.id}`,
+        createdAt: t.createdAt,
+        data: {
+          transactionId: t.id,
+          transactionType: t.transactionType,
+          transactionReason: t.transactionReason,
+          sourceUserId: t.sourceUserId,
+          orderId: t.orderId,
+        },
+      };
+    });
+
+    const allActivities = [
+      ...orderActivities,
+      ...purchaseActivities,
+      ...transactionActivities,
+      ...teammateActivities,
+    ].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
+    const total = allActivities.length;
+    const start = (page - 1) * limit;
+    const paged = allActivities.slice(start, start + limit);
+
+    return {
+      data: {
+        activities: paged,
+        page,
+        limit,
+        total,
+        total_pages: Math.ceil(total / limit),
+      },
+      message: 'Recent activities fetched successfully',
     };
   }
 }

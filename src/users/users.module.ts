@@ -16,6 +16,7 @@ import { EmailService } from 'src/email/email.service';
 import { PointUserBalance } from 'src/shared/entities/point-user-balance.entity';
 import { PointTransaction } from 'src/shared/entities/point-transaction.entity';
 import { Order } from 'src/shared/entities/order.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { Order } from 'src/shared/entities/order.entity';
       PointTransaction,
       Order,
     ]),
+    NotificationsModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your_jwt_secret',

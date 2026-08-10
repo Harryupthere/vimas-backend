@@ -7,6 +7,11 @@ import { RewardMallPurchase } from '../shared/entities/reward-mall-purchase.enti
 import { PointUserBalance } from '../shared/entities/point-user-balance.entity';
 import { CreateRewardMallProductDto } from './dto/create-reward-mall-product.dto';
 import { UpdateRewardMallProductDto } from './dto/update-reward-mall-product.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import {
+  NotificationCategoryName,
+  NotificationTypeName,
+} from '../notifications/notification-names';
 
 @Injectable()
 export class RewardMallProductsService {
@@ -22,6 +27,8 @@ export class RewardMallProductsService {
 
     @InjectRepository(PointUserBalance)
     private readonly pointUserBalanceRepo: Repository<PointUserBalance>,
+
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // Batch-sums how much of each product this user has already redeemed
@@ -71,6 +78,16 @@ export class RewardMallProductsService {
 
     const product = this.buildProductEntity(dto);
     await this.productRepo.save(product);
+
+    void this.notificationsService.notifyAllUsers({
+      categoryName: NotificationCategoryName.REWARD_MALL_PRODUCTS,
+      typeName: NotificationTypeName.GENERAL,
+      heading: 'New reward mall product added',
+      subheading: `${product.name} was just added to the reward mall.`,
+      route: `/reward-mall-products/${product.id}`,
+      data: { productId: product.id },
+    });
+
     return {
       data: product,
       message: 'Reward mall product created successfully',
@@ -304,6 +321,16 @@ export class RewardMallProductsService {
 
     Object.assign(product, mappedDto);
     await this.productRepo.save(product);
+
+    void this.notificationsService.notifyAllUsers({
+      categoryName: NotificationCategoryName.REWARD_MALL_PRODUCTS,
+      typeName: NotificationTypeName.GENERAL,
+      heading: 'Reward mall product updated',
+      subheading: `${product.name} was just updated.`,
+      route: `/reward-mall-products/${product.id}`,
+      data: { productId: product.id },
+    });
+
     return {
       data: product,
       message: 'Reward mall product updated successfully',

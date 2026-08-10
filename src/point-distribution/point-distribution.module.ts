@@ -19,6 +19,7 @@ import { PointAdminBalance } from '../shared/entities/point-admin-balance.entity
 import { PointPool } from '../shared/entities/point-pool.entity';
 import { PointTransaction } from '../shared/entities/point-transaction.entity';
 import { Product } from '../shared/entities/products.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { Product } from '../shared/entities/products.entity';
       name: 'point-distribution',
     }),
 
+    NotificationsModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your_jwt_secret',

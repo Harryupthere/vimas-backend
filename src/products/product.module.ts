@@ -10,6 +10,7 @@ import { ProductFeedback } from 'src/shared/entities/product-feedback.entity';
 import { ProductFeedbackLike } from 'src/shared/entities/product-feedback-like.entity';
 import { ProductBulkDetail } from 'src/shared/entities/product-bulk-detail.entity';
 import { ProductViewsModule } from '../product-views/product-views.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ProductViewsModule } from '../product-views/product-views.module';
     ]),
     ProductHistoryModule,
     ProductViewsModule,
+    NotificationsModule,
   ],
   controllers: [ProductsAdminController, ProductsUserController],
   providers: [ProductsService],

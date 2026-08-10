@@ -40,6 +40,9 @@ import { PointAdminBalanceModule } from './point-admin-balance/point-admin-balan
 import { PointPoolDetailModule } from './point-pool-detail/point-pool-detail.module';
 import { PointPoolModule } from './point-pool/point-pool.module';
 import { PointTransactionModule } from './point-transaction/point-transaction.module';
+import { NotificationCategoriesModule } from './notification-categories/notification-categories.module';
+import { NotificationTypesModule } from './notification-types/notification-types.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -112,6 +115,9 @@ import { ScheduleModule } from '@nestjs/schedule';
     PointPoolDetailModule,
     PointPoolModule,
     PointTransactionModule,
+    NotificationCategoriesModule,
+    NotificationTypesModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

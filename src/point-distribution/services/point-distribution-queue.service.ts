@@ -28,6 +28,11 @@ import { PointAdminBalance } from 'src/shared/entities/point-admin-balance.entit
 import { Product } from 'src/shared/entities/products.entity';
 import { calculateSharedPoints } from 'src/shared/utils/point-sharing.util';
 import { EntityManager, Repository } from 'typeorm';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import {
+  NotificationCategoryName,
+  NotificationTypeName,
+} from 'src/notifications/notification-names';
 
 // Order in which a purchase moves through the pipeline. Used purely to
 // compare "how far did a previous attempt get" against "what step are we
@@ -68,6 +73,7 @@ export class PointDistributionQueueService {
     private readonly adminRepo: Repository<Admin>,
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private readonly logger = new Logger(PointDistributionQueueService.name);
@@ -232,6 +238,15 @@ export class PointDistributionQueueService {
               );
             },
           );
+          void this.notificationsService.notifyUser({
+            userId: buyer.id,
+            categoryName: NotificationCategoryName.POINTS,
+            typeName: NotificationTypeName.SUCCESS,
+            heading: 'Points earned',
+            subheading: `You earned ${amount} points from your purchase (order #${orderId}).`,
+            route: `/orders/${orderId}`,
+            data: { orderId, productId, amount },
+          });
         } else {
           this.logger.warn(
             `[${queueId}] No active BUY_PRODUCT/BUYER point distribution rule configured — skipping buyer reward`,
@@ -301,6 +316,15 @@ export class PointDistributionQueueService {
               await this.advanceStage(manager, entry.id, stageForRule, amount);
             },
           );
+          void this.notificationsService.notifyUser({
+            userId: uplineUserId,
+            categoryName: NotificationCategoryName.POINTS,
+            typeName: NotificationTypeName.SUCCESS,
+            heading: 'Points earned',
+            subheading: `You earned ${amount} points from your team's purchase (order #${orderId}).`,
+            route: `/point-transaction/my`,
+            data: { orderId, productId, amount },
+          });
         } else {
           // No upline at this level (buyer — or an ancestor — joined with no
           // referrer): this level, and by construction every level after it

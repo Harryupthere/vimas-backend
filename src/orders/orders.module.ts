@@ -13,6 +13,7 @@ import { OrdersAdminController } from './admin/orders.controller';
 import { OrdersWebhookController } from './webhook/orders-webhook.controller';
 import { PointDistributionPurchaseQueue } from 'src/shared/entities/point-distribution-purchase-queue.entity';
 import { BullModule } from '@nestjs/bull';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { BullModule } from '@nestjs/bull';
     }),
 
     StripeModule,
+    NotificationsModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your_jwt_secret',

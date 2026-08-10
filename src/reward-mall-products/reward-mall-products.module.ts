@@ -11,6 +11,7 @@ import { RewardMallProductsService } from './reward-mall-products.service';
 import { RewardMallProductsAdminController } from './admin/reward-mall-products.controller';
 import { RewardMallProductsUserController } from './user/reward-mall-products.controller';
 import { RewardMallProductsPublicController } from './public/reward-mall-products.controller';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RewardMallProductsPublicController } from './public/reward-mall-product
       RewardMallPurchase,
       PointUserBalance,
     ]),
+    NotificationsModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your_jwt_secret',

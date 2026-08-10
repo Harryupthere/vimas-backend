@@ -96,7 +96,18 @@
       "Bash(node ./debug_reward_mall_tmp.js)",
       "Bash(sed -i '' \"s#service.findAllUsers\\(1, 10, undefined, undefined, 'a'\\)#service.findAllUsers\\(1, 10, undefined, undefined, 'a'\\)#\" ./debug_reward_mall_tmp.js)",
       "Bash(curl -s -o /tmp/public_resp.json -w \"HTTP %{http_code}\\\\n\" \"http://localhost:5002/api/vimas/public/reward-mall-products?page=1&limit=10&search=a\")",
-      "Bash(python3)"
+      "Bash(python3)",
+      "Bash(node -e \"console.log\\(Date.now\\(\\)\\)\")",
+      "Bash(mysql -h localhost -P 3306 -u root vimas -e \"select * from migrations order by id desc limit 10;\")",
+      "Bash(mysql -h localhost -P 3306 -u root vimas -e \"select * from notification_categories;\")",
+      "Bash(mysql -h localhost -P 3306 -u root vimas -e \"select * from notification_types;\")",
+      "Bash(mysql -h localhost -P 3306 -u root vimas -e \"select id, first_name, last_name, status from users limit 5;\")",
+      "Bash(mysql -h localhost -P 3306 -u root vimas -e \"select count\\(*\\) from notifications where heading like 'TEST:%';\")",
+      "Bash(mysql -h localhost -P 3306 -u root vimas -e \"select count\\(*\\) as active_users from users where status=1 and is_admin_deleted=0 and is_self_deleted=0;\")",
+      "Bash(awk '{print $2}')",
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(python3 /private/tmp/claude-501/-Users-user-Desktop-Harry-vimas-backend/23cba680-e4c4-442e-8617-b1068ff4edff/scratchpad/add_notifications_postman.py)",
+      "Bash(mysql -h localhost -P 3306 -u root vimas -e \"DELETE FROM notifications WHERE heading LIKE 'TEST:%';\")"
     ],
     "additionalDirectories": [
       "/private/tmp"

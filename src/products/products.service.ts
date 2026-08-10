@@ -19,6 +19,11 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductHistoryService } from '../product-history/product-history.service';
 import { ProductViewsService } from '../product-views/product-views.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import {
+  NotificationCategoryName,
+  NotificationTypeName,
+} from '../notifications/notification-names';
 
 @Injectable()
 export class ProductsService {
@@ -40,6 +45,7 @@ export class ProductsService {
 
     private readonly productHistoryService: ProductHistoryService,
     private readonly productViewsService: ProductViewsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private buildProductEntity(dto: CreateProductDto) {
@@ -187,6 +193,16 @@ export class ProductsService {
     const product = this.buildProductEntity(dto);
 
     await this.productRepo.save(product);
+
+    void this.notificationsService.notifyAllUsers({
+      categoryName: NotificationCategoryName.PRODUCTS,
+      typeName: NotificationTypeName.GENERAL,
+      heading: 'New product added',
+      subheading: `${product.name} was just added.`,
+      route: `/products/${product.id}`,
+      data: { productId: product.id },
+    });
+
     return { data: product, message: 'Product created successfully' };
   }
 
@@ -470,6 +486,15 @@ export class ProductsService {
         existing,
         mappedDto,
       );
+
+      void this.notificationsService.notifyAllUsers({
+        categoryName: NotificationCategoryName.PRODUCTS,
+        typeName: NotificationTypeName.GENERAL,
+        heading: 'Product updated',
+        subheading: `${dto.name ?? existing.name} was just updated.`,
+        route: `/products/${id}`,
+        data: { productId: id },
+      });
     }
 
     return { message: 'Product updated successfully' };

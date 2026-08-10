@@ -28,6 +28,11 @@ import {
   PointTransactionType,
 } from 'src/shared/entities/point-transaction.entity';
 import { Order } from 'src/shared/entities/order.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import {
+  NotificationCategoryName,
+  NotificationTypeName,
+} from '../notifications/notification-names';
 
 @Injectable()
 export class UsersService {
@@ -51,6 +56,7 @@ export class UsersService {
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
     private readonly emailService: EmailService,
+    private readonly notificationsService: NotificationsService,
 
     private readonly jwtService: JwtService,
   ) {}
@@ -153,6 +159,21 @@ export class UsersService {
     const user = this.userRepo.create(userData);
     const savedUser = await this.userRepo.save(user);
 
+    if (referralUser) {
+      const newUserName =
+        [savedUser.first_name, savedUser.last_name].filter(Boolean).join(' ') ||
+        savedUser.unique_user_id;
+      void this.notificationsService.notifyUser({
+        userId: referralUser.id,
+        categoryName: NotificationCategoryName.TEAMMATE,
+        typeName: NotificationTypeName.SUCCESS,
+        heading: 'New teammate joined',
+        subheading: `${newUserName} joined your team using your referral.`,
+        route: `/users/my-team`,
+        data: { newUserId: savedUser.id },
+      });
+    }
+
     let message;
     let data;
 
@@ -216,7 +237,7 @@ export class UsersService {
         is_self_deleted,
         registrationType,
         ...result
-      } = user as User; // Type assertion to User
+      } = user; // Type assertion to User
 
       const { access_token, refresh_token } = await this.issueTokens(
         savedUser.id,
@@ -262,7 +283,7 @@ export class UsersService {
           },
         });
 
-      if (!isPointUserBalancePresent ) {
+      if (!isPointUserBalancePresent) {
         const pointUserBalances = {
           userId: savedUser.id,
         };
@@ -324,6 +345,22 @@ export class UsersService {
     const user = this.userRepo.create(userData);
     const savedUser = await this.userRepo.save(user);
 
+    if (referralUser) {
+      const newUserName =
+        [savedUser.first_name, savedUser.last_name].filter(Boolean).join(' ') ||
+        savedUser.username ||
+        savedUser.unique_user_id;
+      void this.notificationsService.notifyUser({
+        userId: referralUser.id,
+        categoryName: NotificationCategoryName.TEAMMATE,
+        typeName: NotificationTypeName.SUCCESS,
+        heading: 'New teammate joined',
+        subheading: `${newUserName} joined your team using your referral.`,
+        route: `/users/my-team`,
+        data: { newUserId: savedUser.id },
+      });
+    }
+
     const { access_token, refresh_token } = await this.issueTokens(
       savedUser.id,
       {
@@ -356,7 +393,7 @@ export class UsersService {
     const pointUserBalances = { userId: savedUser.id };
     await this.pointUserBalancesRepo.save(pointUserBalances);
 
-    const { password, ...result } = savedUser as User;
+    const { password, ...result } = savedUser;
 
     return {
       message: 'Congratulations to be a part of Vimas.',
@@ -594,7 +631,6 @@ export class UsersService {
     user.status = 1;
     user.email_verified = 1;
     await this.userRepo.save(user);
-    
 
     const isPointUserBalancePresent = await this.pointUserBalancesRepo.findOne({
       where: {
@@ -610,7 +646,7 @@ export class UsersService {
       };
       await this.pointUserBalancesRepo.save(pointUserBalances);
     }
-   
+
     return { data: {}, message: 'Email verification successful' };
   }
 

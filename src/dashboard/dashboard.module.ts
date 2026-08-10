@@ -6,12 +6,20 @@ import { JwtStrategy } from '../shared/auth/strategies/jwt.strategy';
 import { PointUserBalance } from '../shared/entities/point-user-balance.entity';
 import { PointTransaction } from '../shared/entities/point-transaction.entity';
 import { Order } from '../shared/entities/order.entity';
+import { RewardMallPurchase } from '../shared/entities/reward-mall-purchase.entity';
+import { User } from '../shared/entities/user.entity';
 import { DashboardService } from './dashboard.service';
 import { DashboardUserController } from './user/dashboard.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PointUserBalance, PointTransaction, Order]),
+    TypeOrmModule.forFeature([
+      PointUserBalance,
+      PointTransaction,
+      Order,
+      RewardMallPurchase,
+      User,
+    ]),
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your_jwt_secret',
