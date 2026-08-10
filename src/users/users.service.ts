@@ -111,11 +111,13 @@ export class UsersService {
     });
     let referralUser: User | null = null;
 
-    if (dto.referral_id) {
-      referralUser =
-        (await this.userRepo.findOne({
-          where: { id: dto.referral_id },
-        })) || null;
+    if (dto.referral_username) {
+      referralUser = await this.userRepo.findOne({
+        where: { username: dto.referral_username },
+      });
+      if (!referralUser) {
+        throw new BadRequestException('Referral username not found');
+      }
     }
 
     const hashedPassword =
@@ -655,6 +657,7 @@ export class UsersService {
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.userType', 'userType')
       .leftJoinAndSelect('user.registrationType', 'registrationType')
+      .leftJoinAndSelect('user.referral', 'referral')
       .where('user.id = :id', { id })
       .select([
         'user.id',
@@ -677,12 +680,34 @@ export class UsersService {
         'userType.description',
         'registrationType.name',
         'registrationType.description',
+        'referral.id',
+        'referral.first_name',
+        'referral.last_name',
+        'referral.email',
+        'referral.unique_user_id',
+        'referral.created_at',
       ])
       .getOne();
 
     if (!user) throw new NotFoundException('User not found');
 
-    return user;
+    const referredBy = user.referral
+      ? {
+          id: user.referral.id,
+          name:
+            [user.referral.first_name, user.referral.last_name]
+              .filter(Boolean)
+              .join(' ') || null,
+          email: user.referral.email,
+          uniqueUserId: user.referral.unique_user_id,
+          joinedAt: user.referral.created_at,
+        }
+      : null;
+
+    // drop the raw relation object — `referredBy` above is the shaped
+    // version callers should use instead
+    const { referral, ...rest } = user;
+    return { ...rest, referredBy };
   }
 
   async updateProfile(role: string, id: number, dto: UpdateProfileDto) {

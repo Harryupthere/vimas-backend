@@ -57,12 +57,11 @@ export class CreateUserDto {
   @IsString()
   profile?: string;
 
+  // Username of the user who referred this signup — the frontend collects
+  // the referral's username, not their id, so lookup in UsersService.create
+  // resolves this to a user record rather than taking an id directly.
   @IsOptional()
-  @IsInt()
-  referral_id?: number;
-
-    @IsOptional()
-  @IsInt()
+  @IsString()
   referral_username?: string;
 
   @IsOptional()

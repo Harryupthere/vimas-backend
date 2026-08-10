@@ -408,7 +408,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": "Now also includes `referredBy` \u2014 the user who referred this account (id, name, email, uniqueUserId, joinedAt = the referrer's own signup date), or null if this account has no referrer."
           }
         },
         {
@@ -3143,6 +3144,80 @@
                   "language": "json"
                 }
               }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Sessions",
+      "item": [
+        {
+          "name": "List My Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/user-sessions?page=1&limit=10&search=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user-sessions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "The logged-in user's own sessions only."
+          }
+        },
+        {
+          "name": "Get My Session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/user-sessions/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user-sessions",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
             }
           }
         }

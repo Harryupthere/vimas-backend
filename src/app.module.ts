@@ -43,6 +43,7 @@ import { PointTransactionModule } from './point-transaction/point-transaction.mo
 import { NotificationCategoriesModule } from './notification-categories/notification-categories.module';
 import { NotificationTypesModule } from './notification-types/notification-types.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { UserSessionsModule } from './user-sessions/user-sessions.module';
 import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -118,6 +119,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     NotificationCategoriesModule,
     NotificationTypesModule,
     NotificationsModule,
+    UserSessionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
