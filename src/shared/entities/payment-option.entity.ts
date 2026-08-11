@@ -25,6 +25,10 @@ export class PaymentOption {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   charges: number;
 
+  // 0=inactive, 1=active
+  @Column({ type: 'tinyint', default: 1 })
+  status: number;
+
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;
 

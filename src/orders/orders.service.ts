@@ -10,11 +10,15 @@ import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { randomUUID } from 'crypto';
 import Stripe from 'stripe';
 import { Order } from '../shared/entities/order.entity';
 import { Cart } from '../shared/entities/cart.entity';
 import { ContactInfo } from '../shared/entities/contact-info.entity';
+import { PaymentOption } from '../shared/entities/payment-option.entity';
+import { CryptoCurrency } from '../shared/entities/crypto-currency.entity';
 import { StripeService } from '../stripe/stripe.service';
+import { CoinPaymentsService } from '../coinpayments/coinpayments.service';
 import { CheckoutDto } from './dto/checkout.dto';
 import { AdminUpdateOrderDto } from './dto/admin-update-order.dto';
 import { PointDistributionPurchaseQueue } from '../shared/entities/point-distribution-purchase-queue.entity';
@@ -29,6 +33,21 @@ const FAILED_PAYMENT_STATUS_ID = 3;
 const CONFIRMED_ORDER_STATUS_ID = 2;
 const FAILED_ORDER_STATUS_ID = 5;
 
+const USDT_CURRENCY = {
+  1: '54:0xc2132d05d31c914a87c6611c10748aeb04b58e8f',
+  4: '4:0xdac17f958d2ee523a2206206994597c13d831ec7',
+  2: '35:0x55d398326f99059ff775485246999027b3197955',
+  3: '9:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+};
+
+// A payment_options row activates the CoinPayments checkout path if its
+// name contains any of these (case-insensitive) — anything else selected
+// still goes through Stripe, same as today. Matched by substring rather
+// than an exact name because admins won't necessarily type "CoinPayments"
+// verbatim (e.g. an existing row here is named "Coin Payment Crypto
+// Currency").
+const COINPAYMENTS_NAME_KEYWORDS = ['coinpayment', 'coin payment', 'crypto'];
+
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
@@ -36,6 +55,9 @@ export class OrdersService {
   // guards against a slow Stripe round-trip still being in flight when the
   // next scheduled tick fires
   private isReconcilingPendingOrders = false;
+  // same guard, separate flag — Stripe and CoinPayments reconciliation
+  // run as independent cron ticks
+  private isReconcilingCoinPaymentsOrders = false;
 
   constructor(
     @InjectRepository(Order)
@@ -47,6 +69,12 @@ export class OrdersService {
     @InjectRepository(ContactInfo)
     private readonly contactInfoRepo: Repository<ContactInfo>,
 
+    @InjectRepository(PaymentOption)
+    private readonly paymentOptionRepo: Repository<PaymentOption>,
+
+    @InjectRepository(CryptoCurrency)
+    private readonly cryptoCurrencyRepo: Repository<CryptoCurrency>,
+
     @InjectRepository(PointDistributionPurchaseQueue)
     private readonly pointDistributionPurchaseQueueRepo: Repository<PointDistributionPurchaseQueue>,
 
@@ -54,8 +82,16 @@ export class OrdersService {
     private readonly pointDistributionQueue: Queue,
 
     private readonly stripeService: StripeService,
+    private readonly coinPaymentsService: CoinPaymentsService,
     private readonly notificationsService: NotificationsService,
   ) {}
+
+  private isCoinPaymentsOptionName(name?: string | null): boolean {
+    const normalized = (name ?? '').toLowerCase();
+    return COINPAYMENTS_NAME_KEYWORDS.some((keyword) =>
+      normalized.includes(keyword),
+    );
+  }
 
   async checkout(buyerId: number, dto: CheckoutDto) {
     const cartItems = await this.cartRepo.find({
@@ -72,6 +108,26 @@ export class OrdersService {
       throw new NotFoundException('Contact info not found');
     }
 
+    const paymentOptionId = dto.paymentOptionId ?? 1;
+    const paymentOption = await this.paymentOptionRepo.findOne({
+      where: { id: paymentOptionId },
+    });
+    if (!paymentOption) {
+      throw new NotFoundException('Payment option not found');
+    }
+
+    // Flat fee for using this payment option — added on top of the cart
+    // subtotal as its own separate line item in the checkout session
+    // (both Stripe and CoinPayments; see createStripeCheckout /
+    // createCoinPaymentsCheckout below), so the buyer is actually charged
+    // product cost + gateway fee, matching whatever the admin configured
+    // on this payment_options row. Per-order totalAmount/totalAmountPaid
+    // deliberately stay pure product cost — the fee isn't tied to any one
+    // product, so it's kept out of the order rows entirely rather than
+    // folded into one of them (which would risk double-counting wherever
+    // totalAmountPaid is summed elsewhere).
+    const paymentCharges = Number(paymentOption.charges) || 0;
+
     const orders: Order[] = cartItems.map((item) => {
       const unitPrice = Number(item.price_snapshot);
       const discount = Number(item.discount_snapshot || 0);
@@ -86,7 +142,7 @@ export class OrdersService {
         buyerId,
         productId: item.product.id,
         buyerContactDetailsId: contactInfo.id,
-        paymentOptionId: dto.paymentOptionId ?? 1,
+        paymentOptionId,
         quantity: item.quantity,
         singleUnitPrice: unitPrice,
         discountAmount: discount,
@@ -98,14 +154,39 @@ export class OrdersService {
     const savedOrders = await this.orderRepo.save(orders);
     const orderIds = savedOrders.map((o) => o.id);
 
+    const isCoinPayments = this.isCoinPaymentsOptionName(paymentOption.name);
+
+    if (isCoinPayments) {
+      return this.createCoinPaymentsCheckout(
+        dto,
+        cartItems,
+        savedOrders,
+        orderIds,
+        paymentCharges,
+      );
+    }
+
+    return this.createStripeCheckout(
+      cartItems,
+      savedOrders,
+      orderIds,
+      paymentCharges,
+    );
+  }
+
+  private async createStripeCheckout(
+    cartItems: Cart[],
+    savedOrders: Order[],
+    orderIds: number[],
+    paymentCharges: number,
+  ) {
     let session: Stripe.Checkout.Session;
     try {
       const currency = process.env.STRIPE_CURRENCY || 'myr';
       const appUrl = process.env.APP_URL || '';
 
-      session = await this.stripeService.createCheckoutSession({
-        mode: 'payment',
-        line_items: savedOrders.map((order, idx) => ({
+      const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] =
+        savedOrders.map((order, idx) => ({
           quantity: order.quantity,
           price_data: {
             currency,
@@ -117,7 +198,22 @@ export class OrdersService {
               name: cartItems[idx].product.name,
             },
           },
-        })),
+        }));
+
+      if (paymentCharges > 0) {
+        line_items.push({
+          quantity: 1,
+          price_data: {
+            currency,
+            unit_amount: Math.round(paymentCharges * 100),
+            product_data: { name: 'Payment processing fee' },
+          },
+        });
+      }
+
+      session = await this.stripeService.createCheckoutSession({
+        mode: 'payment',
+        line_items,
         metadata: { orderIds: orderIds.join(',') },
         payment_intent_data: {
           metadata: { orderIds: orderIds.join(',') },
@@ -140,6 +236,132 @@ export class OrdersService {
 
     return {
       data: { checkoutUrl: session.url, sessionId: session.id },
+      message: 'Checkout session created successfully',
+    };
+  }
+
+  // Same response shape as Stripe ({ checkoutUrl, sessionId }) so the
+  // frontend doesn't need gateway-specific handling — sessionId here is
+  // the CoinPayments invoice id, which becomes the order's
+  // paymentGatewayId exactly like a Stripe session id does, so
+  // markPaidBySessionId/webhook/cron reconciliation all work unchanged
+  // regardless of which gateway was used.
+  private async createCoinPaymentsCheckout(
+    dto: CheckoutDto,
+    cartItems: Cart[],
+    savedOrders: Order[],
+    orderIds: number[],
+    paymentCharges: number,
+  ) {
+    if (!dto.cryptoCurrencyId) {
+      await this.orderRepo.delete({ id: In(orderIds) });
+      throw new BadRequestException(
+        'cryptoCurrencyId is required when paying with CoinPayments',
+      );
+    }
+
+    const cryptoCurrency = await this.cryptoCurrencyRepo.findOne({
+      where: { id: dto.cryptoCurrencyId, status: 1 },
+    });
+    if (!cryptoCurrency) {
+      await this.orderRepo.delete({ id: In(orderIds) });
+      throw new NotFoundException('Crypto currency not found');
+    }
+
+    // Same two-leg conversion as CryptoCurrenciesService.convertAmountToCrypto:
+    // CoinPayments quotes rates against USDT most reliably, so we hop
+    // MYR -> USDT -> selected coin instead of asking for a direct MYR -> coin
+    // rate.
+    const usdtCurrency = USDT_CURRENCY[dto.cryptoCurrencyId] || 'USDT';
+
+    // Leg 1: fiat (MYR) -> USDT
+    const fiatToUsdtRate = process.env.FIAT_TO_USDT_RATE
+      ? parseFloat(process.env.FIAT_TO_USDT_RATE)
+      : 0.25;
+
+    // Leg 2: USDT -> selected crypto currency
+    const usdtToCryptoRate = await this.coinPaymentsService.getRate(
+      usdtCurrency,
+      cryptoCurrency.coinpaymentId,
+    );
+    const decimals = cryptoCurrency.decimalPlaces ?? 8;
+    const rate = fiatToUsdtRate * usdtToCryptoRate;
+
+    const items = savedOrders.map((order, idx) => ({
+      name: cartItems[idx].product.name,
+      quantity: { value: order.quantity, type: 2 },
+      amount: (Number(order.totalAmountPaid) * rate).toFixed(decimals),
+    }));
+
+    if (paymentCharges > 0) {
+      items.push({
+        name: 'Payment processing fee',
+        quantity: { value: 1, type: 2 },
+        amount: (paymentCharges * rate).toFixed(decimals),
+      });
+    }
+
+    const finalAmount = items
+      .reduce((sum, item) => sum + Number(item.amount), 0)
+      .toFixed(decimals);
+
+    const invoiceId = randomUUID();
+    const appUrl = process.env.APP_URL || '';
+    const webhookUrl =
+      process.env.COINPAYMENTS_WEBHOOK_URL ||
+      `${process.env.API_BASE_URL || appUrl}api/vimas/orders/webhook/coinpayments`;
+
+    const payload = {
+      currency: cryptoCurrency.coinpaymentId,
+      clientId: this.coinPaymentsService.clientId,
+      invoiceId,
+      items,
+      amount: {
+        breakdown: { subtotal: finalAmount },
+        total: finalAmount,
+      },
+      successUrl: `${appUrl}order-confirmation?checkout=success&session_id=${invoiceId}`,
+      cancelUrl: `${appUrl}order-confirmation?checkout=cancel`,
+      webhooks: [
+        {
+          notificationsUrl: webhookUrl,
+          notifications: [
+            'invoiceCreated',
+            'invoicePending',
+            'invoicePaid',
+            'invoiceCompleted',
+            'invoiceCancelled',
+            'invoiceTimedOut',
+          ],
+        },
+      ],
+    };
+
+    let invoiceResponse: any;
+    try {
+      invoiceResponse = await this.coinPaymentsService.createInvoice(payload);
+    } catch (err) {
+      await this.orderRepo.delete({ id: In(orderIds) });
+      throw new InternalServerErrorException(
+        'Failed to create CoinPayments invoice',
+      );
+    }
+
+    const invoice = invoiceResponse?.invoices?.[0];
+    if (!invoice) {
+      await this.orderRepo.delete({ id: In(orderIds) });
+      throw new InternalServerErrorException(
+        'Invalid CoinPayments invoice creation response',
+      );
+    }
+
+    await this.orderRepo.update(
+      { id: In(orderIds) },
+      { paymentGatewayId: invoice.id },
+    );
+
+    return {
+      data: { checkoutUrl: invoice.checkoutLink, sessionId: invoice.id },
       message: 'Checkout session created successfully',
     };
   }
@@ -213,9 +435,23 @@ export class OrdersService {
     this.isReconcilingPendingOrders = true;
 
     try {
-      const pendingOrders = await this.orderRepo.find({
-        where: { paymentStatusId: PENDING_PAYMENT_STATUS_ID },
-      });
+      // Excludes CoinPayments orders — those are reconciled separately in
+      // reconcilePendingOrdersWithCoinPayments, since a CoinPayments
+      // invoice id means nothing to Stripe's API. Keep these LIKE
+      // patterns in sync with COINPAYMENTS_NAME_KEYWORDS above.
+      const pendingOrders = await this.orderRepo
+        .createQueryBuilder('order')
+        .leftJoin('order.paymentOption', 'paymentOption')
+        .where('order.payment_status_id = :status', {
+          status: PENDING_PAYMENT_STATUS_ID,
+        })
+        .andWhere(
+          `(paymentOption.name IS NULL
+            OR (LOWER(paymentOption.name) NOT LIKE '%coinpayment%'
+              AND LOWER(paymentOption.name) NOT LIKE '%coin payment%'
+              AND LOWER(paymentOption.name) NOT LIKE '%crypto%'))`,
+        )
+        .getMany();
 
       const sessionIds = [
         ...new Set(
@@ -268,6 +504,153 @@ export class OrdersService {
       }
     } finally {
       this.isReconcilingPendingOrders = false;
+    }
+  }
+
+  // Signature-verified via CoinPaymentsService (HMAC-SHA256 over the raw
+  // body with the merchant private key) — same trust model as the Stripe
+  // webhook above, just a different signing scheme.
+  async handleCoinPaymentsWebhook(rawBody: Buffer, signature: string) {
+    const isValid = this.coinPaymentsService.verifyWebhookSignature(
+      rawBody,
+      signature,
+    );
+    if (!isValid) {
+      this.logger.warn('CoinPayments webhook signature verification failed');
+      throw new BadRequestException('Invalid CoinPayments signature');
+    }
+
+    const body = JSON.parse(rawBody.toString('utf8')) as {
+      id?: string;
+      invoiceId?: string;
+      status?: string;
+      type?: string;
+    };
+    const invoiceId = body.id ?? body.invoiceId;
+    const invoiceStatus = body.status ?? body.type;
+
+    if (!invoiceId) {
+      throw new BadRequestException(
+        'Missing invoice id in CoinPayments webhook payload',
+      );
+    }
+
+    const status = this.mapCoinPaymentsStatus(invoiceStatus);
+    if (status === 'paid') {
+      await this.markPaidBySessionId(invoiceId);
+    } else if (status === 'failed') {
+      await this.orderRepo.update(
+        {
+          paymentGatewayId: invoiceId,
+          paymentStatusId: PENDING_PAYMENT_STATUS_ID,
+        },
+        {
+          paymentStatusId: FAILED_PAYMENT_STATUS_ID,
+          orderStatusId: FAILED_ORDER_STATUS_ID,
+        },
+      );
+    } else {
+      this.logger.log(
+        `Unhandled CoinPayments invoice status: ${invoiceStatus ?? 'unknown'}`,
+      );
+    }
+
+    return { received: true };
+  }
+
+  private mapCoinPaymentsStatus(status?: string): 'paid' | 'failed' | null {
+    switch (status) {
+      case 'paid':
+      case 'completed':
+      case 'invoicePaid':
+      case 'invoiceCompleted':
+        return 'paid';
+      case 'cancelled':
+      case 'timedOut':
+      case 'invoiceCancelled':
+      case 'invoiceTimedOut':
+        return 'failed';
+      default:
+        return null;
+    }
+  }
+
+  // Same fallback role as reconcilePendingOrdersWithStripe, scoped to
+  // orders placed via the CoinPayments payment option.
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async reconcilePendingOrdersWithCoinPayments(): Promise<void> {
+    if (this.isReconcilingCoinPaymentsOrders) {
+      this.logger.warn(
+        'Previous CoinPayments reconciliation run is still in progress, skipping this tick',
+      );
+      return;
+    }
+    this.isReconcilingCoinPaymentsOrders = true;
+
+    try {
+      // Keep these LIKE patterns in sync with COINPAYMENTS_NAME_KEYWORDS
+      // above / isCoinPaymentsOptionName.
+      const pendingOrders = await this.orderRepo
+        .createQueryBuilder('order')
+        .leftJoin('order.paymentOption', 'paymentOption')
+        .where('order.payment_status_id = :status', {
+          status: PENDING_PAYMENT_STATUS_ID,
+        })
+        .andWhere(
+          `(LOWER(paymentOption.name) LIKE '%coinpayment%'
+            OR LOWER(paymentOption.name) LIKE '%coin payment%'
+            OR LOWER(paymentOption.name) LIKE '%crypto%')`,
+        )
+        .getMany();
+
+      const invoiceIds = [
+        ...new Set(
+          pendingOrders
+            .map((o) => o.paymentGatewayId)
+            .filter((id): id is string => !!id),
+        ),
+      ];
+
+      if (!invoiceIds.length) return;
+
+      this.logger.log(
+        `Reconciling ${invoiceIds.length} pending CoinPayments invoice(s) against pending orders`,
+      );
+
+      for (const invoiceId of invoiceIds) {
+        try {
+          const invoiceResponse =
+            await this.coinPaymentsService.getInvoice(invoiceId);
+          const status = this.mapCoinPaymentsStatus(invoiceResponse?.status);
+          if (status === 'paid') {
+            await this.markPaidBySessionId(invoiceId);
+            this.logger.log(`Invoice ${invoiceId} reconciled as paid`);
+          } else if (status === 'failed') {
+            const result = await this.orderRepo.update(
+              {
+                paymentGatewayId: invoiceId,
+                paymentStatusId: PENDING_PAYMENT_STATUS_ID,
+              },
+              {
+                paymentStatusId: FAILED_PAYMENT_STATUS_ID,
+                orderStatusId: FAILED_ORDER_STATUS_ID,
+              },
+            );
+            if (result.affected) {
+              this.logger.log(`Invoice ${invoiceId} reconciled as failed`);
+            }
+          }
+          // any other status — still genuinely pending, leave as-is
+        } catch (err) {
+          this.logger.error(
+            `Failed to reconcile CoinPayments invoice ${invoiceId}: ${
+              err instanceof Error ? err.message : err
+            }`,
+          );
+        }
+      }
+    } finally {
+      this.isReconcilingCoinPaymentsOrders = false;
     }
   }
 

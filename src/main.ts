@@ -11,16 +11,21 @@ async function bootstrap() {
   // Set global prefix
   app.setGlobalPrefix('api/vimas');
 
-  // Stripe webhook needs the raw, untouched request body to verify the
-  // signature — it must never be parsed by the JSON body parser below.
+  // Stripe/CoinPayments webhooks need the raw, untouched request body to
+  // verify their signatures — must never be parsed by the JSON body
+  // parser below.
+  const RAW_BODY_WEBHOOK_PATHS = [
+    '/api/vimas/orders/webhook',
+    '/api/vimas/orders/webhook/coinpayments',
+  ];
   app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.originalUrl === '/api/vimas/orders/webhook') {
+    if (RAW_BODY_WEBHOOK_PATHS.includes(req.originalUrl)) {
       bodyParser.raw({ type: 'application/json' })(req, res, next);
     } else {
       bodyParser.json()(req, res, next);
     }
   });
-  
+
   app.use(bodyParser.urlencoded({ extended: true }));
 
   app.enableCors({

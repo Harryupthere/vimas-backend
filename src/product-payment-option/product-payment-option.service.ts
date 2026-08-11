@@ -40,4 +40,19 @@ export class ProductPaymentOptionService {
       throw new NotFoundException('Product Payment Option not found');
     return { data: paymentOption, message: 'Payment options' };
   }
+
+  // Admin removes a single product↔payment-option mapping by its own row
+  // id (not product_id — that's a 1-to-many, this targets one specific
+  // link row).
+  async remove(id: number): Promise<any> {
+    const paymentOption = await this.paymentOptionRepo.findOne({
+      where: { id },
+    });
+    if (!paymentOption) {
+      throw new NotFoundException('Product Payment Option not found');
+    }
+
+    await this.paymentOptionRepo.remove(paymentOption);
+    return { message: 'Product payment option removed successfully' };
+  }
 }

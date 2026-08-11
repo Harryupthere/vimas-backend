@@ -1338,6 +1338,35 @@
               }
             }
           }
+        },
+        {
+          "name": "Remove Product Payment Option",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/product-payment-option/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product-payment-option",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": ":id is the product_payment_options row's own id (from Attach Payment Option's response / List Products), not the product id."
+          }
         }
       ]
     },
@@ -1580,7 +1609,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Cash on delivery\",\n  \"description\": \"Pay when you receive the order\",\n  \"note\": [],\n  \"charges\": 0\n}",
+              "raw": "{\n  \"name\": \"Cash on delivery\",\n  \"description\": \"Pay when you receive the order\",\n  \"note\": [],\n  \"charges\": 0,\n  \"status\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1595,7 +1624,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/payment-options?search=",
+              "raw": "{{base_url}}/admin/payment-options?search=&status=",
               "host": [
                 "{{base_url}}"
               ],
@@ -1608,6 +1637,11 @@
                   "key": "search",
                   "value": "",
                   "description": "Optional search term (matches against relevant text fields)"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Optional \u2014 filter by 0 (inactive) or 1 (active)"
                 }
               ]
             },
@@ -1684,7 +1718,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"charges\": 10\n}",
+              "raw": "{\n  \"charges\": 10,\n  \"status\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5750,6 +5784,193 @@
               "path": [
                 "admin",
                 "user-sessions",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Crypto Currencies",
+      "item": [
+        {
+          "name": "Create Crypto Currency",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/crypto-currencies",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "crypto-currencies"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coinpaymentId\": \"BTC\",\n  \"name\": \"Bitcoin\",\n  \"symbol\": \"BTC\",\n  \"type\": \"coin\",\n  \"decimalPlaces\": 8,\n  \"priceCurrencyId\": \"MYR\",\n  \"status\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "priceCurrencyId should match COINPAYMENTS_BASE_CURRENCY (the store's charge currency) so rate lookups and invoice totals stay consistent."
+          }
+        },
+        {
+          "name": "List Crypto Currencies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/crypto-currencies?page=1&limit=10&search=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "crypto-currencies"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Crypto Currency",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/crypto-currencies/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "crypto-currencies",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Crypto Currency",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/crypto-currencies/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "crypto-currencies",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Crypto Currency",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/crypto-currencies/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "crypto-currencies",
                 ":id"
               ]
             },

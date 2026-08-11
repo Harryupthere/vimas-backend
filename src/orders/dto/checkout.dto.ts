@@ -8,4 +8,10 @@ export class CheckoutDto {
   @IsInt()
   @IsOptional()
   paymentOptionId?: number;
+
+  // Required only when the selected paymentOptionId resolves to the
+  // CoinPayments payment option — which crypto currency to invoice in.
+  @IsInt()
+  @IsOptional()
+  cryptoCurrencyId?: number;
 }

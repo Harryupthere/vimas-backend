@@ -1466,7 +1466,7 @@
                 "checkout"
               ]
             },
-            "description": "Creates one pending order per cart item and returns a Stripe Checkout URL. Redirect the buyer to data.checkoutUrl.",
+            "description": "Creates one pending order per cart item and returns a Stripe Checkout URL. Redirect the buyer to data.checkoutUrl. If the selected payment option has a non-zero `charges` value, it's added as a separate \"Payment processing fee\" line item on top of the cart subtotal.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -1486,6 +1486,48 @@
                 }
               }
             }
+          }
+        },
+        {
+          "name": "Checkout Cart (CoinPayments)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders/checkout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "checkout"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactInfoId\": 1,\n  \"paymentOptionId\": 2,\n  \"cryptoCurrencyId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Same endpoint as the Stripe checkout \u2014 set paymentOptionId to whichever payment_options row activates CoinPayments (name containing \"crypto\" or \"coin payment\") and pass cryptoCurrencyId (from Crypto Currencies > List) to invoice in that coin. If the selected payment option has a non-zero `charges` value, it's added as a separate \"Payment processing fee\" item converted at the same rate. Returns the same { checkoutUrl, sessionId } shape; redirect the buyer to data.checkoutUrl."
           }
         },
         {
@@ -1593,6 +1635,45 @@
                 }
               ]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Crypto Currencies",
+      "item": [
+        {
+          "name": "List Crypto Currencies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/crypto-currencies?search=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "crypto-currencies"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term (matches against relevant text fields)"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Active coins only \u2014 populate the CoinPayments checkout's currency picker with these ids."
           }
         }
       ]

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreatePaymentOptionDto {
   @IsString()
@@ -14,4 +14,8 @@ export class CreatePaymentOptionDto {
 
   @IsOptional()
   charges?: number;
+
+  @IsIn([0, 1])
+  @IsOptional()
+  status?: number;
 }

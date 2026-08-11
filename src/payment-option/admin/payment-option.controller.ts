@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { PaymentOptionsService } from '../payment-option.service';
 import { CreatePaymentOptionDto } from '../dto/create-payment-option.dto';
+import { UpdatePaymentOptionDto } from '../dto/update-payment-option.dto';
 
 @Controller('admin')
 export class PaymentOptionsController {
@@ -22,8 +23,11 @@ export class PaymentOptionsController {
   }
 
   @Get('payment-options')
-  findAll(@Query('search') search?: string) {
-    return this.paymentOptionsService.findAll(search);
+  findAll(@Query('search') search?: string, @Query('status') status?: string) {
+    return this.paymentOptionsService.findAll(
+      search,
+      status !== undefined ? +status : undefined,
+    );
   }
 
   @Get('payment-options/:id')
@@ -32,7 +36,7 @@ export class PaymentOptionsController {
   }
 
   @Put('payment-options/:id')
-  update(@Param('id') id: number, @Body() dto: any) {
+  update(@Param('id') id: number, @Body() dto: UpdatePaymentOptionDto) {
     return this.paymentOptionsService.update(id, dto);
   }
 

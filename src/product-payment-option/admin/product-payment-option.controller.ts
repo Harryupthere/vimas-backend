@@ -1,4 +1,12 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Delete,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { ProductPaymentOptionService } from '../product-payment-option.service';
 import { CreateProductPaymentOptionDto } from '../dto/create-product-payment-option.dto';
 import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
@@ -14,5 +22,11 @@ export class ProductPaymentOptionAdminController {
   @Post()
   create(@Body() dto: CreateProductPaymentOptionDto) {
     return this.ppoService.create(dto);
+  }
+
+  // :id is the product_payment_options row's own id, not the product id
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.ppoService.remove(id);
   }
 }

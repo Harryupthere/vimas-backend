@@ -6,7 +6,10 @@ import { JwtStrategy } from '../shared/auth/strategies/jwt.strategy';
 import { Order } from '../shared/entities/order.entity';
 import { Cart } from '../shared/entities/cart.entity';
 import { ContactInfo } from '../shared/entities/contact-info.entity';
+import { PaymentOption } from '../shared/entities/payment-option.entity';
+import { CryptoCurrency } from '../shared/entities/crypto-currency.entity';
 import { StripeModule } from '../stripe/stripe.module';
+import { CoinPaymentsModule } from '../coinpayments/coinpayments.module';
 import { OrdersService } from './orders.service';
 import { OrdersController } from './user/orders.controller';
 import { OrdersAdminController } from './admin/orders.controller';
@@ -21,6 +24,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
       Order,
       Cart,
       ContactInfo,
+      PaymentOption,
+      CryptoCurrency,
       PointDistributionPurchaseQueue,
     ]),
 
@@ -29,6 +34,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     }),
 
     StripeModule,
+    CoinPaymentsModule,
     NotificationsModule,
     PassportModule,
     JwtModule.register({
