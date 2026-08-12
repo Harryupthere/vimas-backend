@@ -82,6 +82,16 @@ export class CreateProductDto {
   resellerMaximumQuantity?: number;
 
   @IsOptional()
+  @IsInt()
+  @Min(0)
+  partnerMinimumQuantity?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  partnerMaximumQuantity?: number;
+
+  @IsOptional()
   @IsBoolean()
   showTotalPoints?: boolean;
 
@@ -126,4 +136,16 @@ export class CreateProductDto {
   @IsOptional()
   @IsBoolean()
   bulkAvailable?: boolean;
+
+  // Gates the consumer listing (GET /products?type=consumer). Defaults to
+  // true (matches the column's DB default) when omitted.
+  @IsOptional()
+  @IsBoolean()
+  consumerAvailable?: boolean;
+
+  // Gates the partner listing (GET /products?type=partner). Defaults to
+  // true (matches the column's DB default) when omitted.
+  @IsOptional()
+  @IsBoolean()
+  partnerAvailable?: boolean;
 }

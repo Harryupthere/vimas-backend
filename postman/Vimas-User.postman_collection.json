@@ -682,6 +682,7 @@
                 {
                   "key": "type",
                   "value": "",
+                  "description": "reseller | consumer | partner",
                   "disabled": true
                 },
                 {
@@ -701,7 +702,7 @@
                 }
               ]
             },
-            "description": "type=reseller restricts results to bulk-purchasable products (bulk_available = 1). Omit (or any other value) to get the full catalog. Points display: for consumer/default, each product includes totalPoints (if the product's showTotalPoints is on) and pointsSharing (if showPointsSharing is on) sourced from the product itself. For type=reseller, those same two fields instead come from EACH active bulk package under the product \u2014 returned as bulkPointsSharing: an array of { productBulkDetailsId, packageQuantity, totalPoints?, pointsSharing? }, one entry per package, each gated by that package's own showTotalPoints/showPointsSharing."
+            "description": "type=reseller restricts results to bulk-purchasable products (bulk_available = 1); type=consumer to consumer-available products (consumer_available = 1); type=partner to partner-available products (partner_available = 1). Omit (or any other value) to get the full catalog. Points display: for consumer/default, each product includes totalPoints (if the product's showTotalPoints is on) and pointsSharing (if showPointsSharing is on) sourced from the product itself. For type=reseller, those same two fields instead come from EACH active bulk package under the product \u2014 returned as bulkPointsSharing: an array of { productBulkDetailsId, packageQuantity, totalPoints?, pointsSharing? }, one entry per package, each gated by that package's own showTotalPoints/showPointsSharing."
           }
         },
         {
@@ -722,6 +723,7 @@
                 {
                   "key": "type",
                   "value": "",
+                  "description": "reseller | consumer | partner",
                   "disabled": true
                 }
               ]
@@ -736,7 +738,7 @@
                 }
               ]
             },
-            "description": "Response conditionally includes totalPoints/pointsSharing \u2014 an array of { receiverType, pointsPercentage, points } for each active BUY_PRODUCT distribution rule \u2014 sourced from the product's own showTotalPoints/showPointsSharing for consumer/default requests. type=reseller returns \"Product not found\" unless the product's bulk_available = 1, and swaps those fields for bulkPointsSharing: one entry per active bulk package ( { productBulkDetailsId, packageQuantity, totalPoints?, pointsSharing? } ), each gated by that package's own showTotalPoints/showPointsSharing instead of the product's."
+            "description": "Response conditionally includes totalPoints/pointsSharing \u2014 an array of { receiverType, pointsPercentage, points } for each active BUY_PRODUCT distribution rule \u2014 sourced from the product's own showTotalPoints/showPointsSharing for consumer/default requests. type=reseller returns \"Product not found\" unless the product's bulk_available = 1; type=consumer requires consumer_available = 1; type=partner requires partner_available = 1. type=reseller also swaps totalPoints/pointsSharing for bulkPointsSharing: one entry per active bulk package ( { productBulkDetailsId, packageQuantity, totalPoints?, pointsSharing? } ), each gated by that package's own showTotalPoints/showPointsSharing instead of the product's."
           }
         }
       ]
@@ -1115,7 +1117,7 @@
                 }
               }
             },
-            "description": "cart_type is optional and defaults to \"consumer\". consumer and reseller are separate rows for the same product \u2014 adding a reseller line for a product you already have as consumer creates a second row instead of merging quantities. quantity is checked against consumerMinimumQuantity/consumerMaximumQuantity (or resellerMinimumQuantity/resellerMaximumQuantity for reseller) \u2014 400 if outside those bounds. For cart_type=\"reseller\", productBulkDetailsId is required \u2014 see the \"Add To Cart (Reseller)\" request for how multiple packages of the same product are handled."
+            "description": "cart_type is optional and defaults to \"consumer\" (consumer | reseller | partner). consumer and reseller are separate rows for the same product \u2014 adding a reseller line for a product you already have as consumer creates a second row instead of merging quantities (a buyer can hold both at once). quantity is checked against consumerMinimumQuantity/consumerMaximumQuantity, resellerMinimumQuantity/resellerMaximumQuantity, or partnerMinimumQuantity/partnerMaximumQuantity depending on cart_type \u2014 400 if outside those bounds. For cart_type=\"reseller\", productBulkDetailsId is required \u2014 see the \"Add To Cart (Reseller)\" request for how multiple packages of the same product are handled. For cart_type=\"partner\", the add is rejected with 400 if the product already has a consumer or reseller row in this buyer's cart."
           }
         },
         {

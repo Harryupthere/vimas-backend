@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Cart, CartType } from '../shared/entities/cart.entity';
 import { AddToCartDto, UpdateCartDto } from './dto/cart.dto';
 import { Product } from '../shared/entities/products.entity';
@@ -23,20 +23,27 @@ export class CartService {
   ) {}
 
   // Quantity bounds for a product depend on which cart_type the line is
-  // for — separate columns on products for consumer vs reseller. For
+  // for — separate columns on products for consumer/reseller/partner. For
   // reseller, "quantity" means package count, not product units: a package
   // is treated as one unit of quantity regardless of how many items it
   // physically contains (see product_bulk_details.package_quantity).
   private getQuantityBounds(product: Product, cartType: CartType) {
-    return cartType === CartType.RESELLER
-      ? {
-          min: product.resellerMinimumQuantity,
-          max: product.resellerMaximumQuantity,
-        }
-      : {
-          min: product.consumerMinimumQuantity,
-          max: product.consumerMaximumQuantity,
-        };
+    if (cartType === CartType.RESELLER) {
+      return {
+        min: product.resellerMinimumQuantity,
+        max: product.resellerMaximumQuantity,
+      };
+    }
+    if (cartType === CartType.PARTNER) {
+      return {
+        min: product.partnerMinimumQuantity,
+        max: product.partnerMaximumQuantity,
+      };
+    }
+    return {
+      min: product.consumerMinimumQuantity,
+      max: product.consumerMaximumQuantity,
+    };
   }
 
   // Every cart row this buyer already has for this product+type. Consumer
@@ -66,6 +73,25 @@ export class CartService {
     if (!product) throw new NotFoundException('Product not found');
 
     const cartType = dto.cart_type ?? CartType.CONSUMER;
+
+    // Partner is mutually exclusive with consumer/reseller for the same
+    // product — a buyer can still hold a consumer row AND a reseller row
+    // for the same product at once (unchanged), but adding as partner is
+    // blocked if either already exists.
+    if (cartType === CartType.PARTNER) {
+      const conflictingRow = await this.cartRepo.findOne({
+        where: {
+          buyer: { id: buyerId },
+          product: { id: dto.productId },
+          cart_type: In([CartType.CONSUMER, CartType.RESELLER]),
+        },
+      });
+      if (conflictingRow) {
+        throw new BadRequestException(
+          `Can not add same product from ${conflictingRow.cart_type} and partner`,
+        );
+      }
+    }
 
     // Reseller lines must reference a real, active bulk package belonging
     // to this product; consumer lines never carry one.

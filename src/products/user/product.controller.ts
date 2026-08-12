@@ -7,8 +7,10 @@ export class ProductsUserController {
   constructor(private readonly productsService: ProductsService) {}
 
   // Buyer APIs — admin is the sole product creator now (no merchant flow)
-  // type=reseller restricts results to bulk-purchasable products
-  // (bulk_available = 1); omitted/any other value returns the full catalog.
+  // type=reseller/consumer/partner restricts results to products opted
+  // into the matching catalog (bulk_available/consumer_available/
+  // partner_available = 1 respectively); omitted/any other value returns
+  // the full catalog.
   @UseGuards(JwtAuthGuard)
   @Get()
   findAllUsers(

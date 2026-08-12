@@ -57,6 +57,10 @@ export class ProductsService {
       showTotalPoints: dto.showTotalPoints ? 1 : 0,
       showPointsSharing: dto.showPointsSharing ? 1 : 0,
       bulkAvailable: dto.bulkAvailable ? 1 : 0,
+      // consumer/partner default to available (matches the columns' DB
+      // default of 1) unless the admin explicitly opts a product out.
+      consumerAvailable: dto.consumerAvailable === false ? 0 : 1,
+      partnerAvailable: dto.partnerAvailable === false ? 0 : 1,
       isOutOfStock: 0,
       status: 0,
     });
@@ -256,10 +260,19 @@ export class ProductsService {
       .skip((page - 1) * limit)
       .take(limit);
 
-    // reseller listing — only bulk-purchasable products
+    // reseller/consumer/partner listings — only products the admin opted
+    // into that catalog via the matching *_available column.
     if (type === 'reseller') {
       query.andWhere('product.bulk_available = :bulkAvailable', {
         bulkAvailable: 1,
+      });
+    } else if (type === 'consumer') {
+      query.andWhere('product.consumer_available = :consumerAvailable', {
+        consumerAvailable: 1,
+      });
+    } else if (type === 'partner') {
+      query.andWhere('product.partner_available = :partnerAvailable', {
+        partnerAvailable: 1,
       });
     }
 
@@ -316,10 +329,14 @@ export class ProductsService {
         viewCount: p.viewCount,
         likeCount: p.likeCount,
         bulkAvailable: p.bulkAvailable,
+        consumerAvailable: p.consumerAvailable,
+        partnerAvailable: p.partnerAvailable,
         consumerMinimumQuantity: p.consumerMinimumQuantity,
         consumerMaximumQuantity: p.consumerMaximumQuantity,
         resellerMinimumQuantity: p.resellerMinimumQuantity,
         resellerMaximumQuantity: p.resellerMaximumQuantity,
+        partnerMinimumQuantity: p.partnerMinimumQuantity,
+        partnerMaximumQuantity: p.partnerMaximumQuantity,
         ...(type === 'reseller'
           ? { bulkPointsSharing: bulkPointsSharingByProduct.get(p.id) ?? [] }
           : this.buildPointsInfo(
@@ -367,8 +384,11 @@ export class ProductsService {
       where: {
         id,
         status: 1, // only active products
-        // reseller access — only bulk-purchasable products
+        // reseller/consumer/partner access — only products opted into the
+        // matching catalog via the corresponding *_available column.
         ...(type === 'reseller' ? { bulkAvailable: 1 } : {}),
+        ...(type === 'consumer' ? { consumerAvailable: 1 } : {}),
+        ...(type === 'partner' ? { partnerAvailable: 1 } : {}),
       },
       relations: [
         'category',
@@ -411,10 +431,14 @@ export class ProductsService {
       viewCount,
       likeCount: product.likeCount,
       bulkAvailable: product.bulkAvailable,
+      consumerAvailable: product.consumerAvailable,
+      partnerAvailable: product.partnerAvailable,
       consumerMinimumQuantity: product.consumerMinimumQuantity,
       consumerMaximumQuantity: product.consumerMaximumQuantity,
       resellerMinimumQuantity: product.resellerMinimumQuantity,
       resellerMaximumQuantity: product.resellerMaximumQuantity,
+      partnerMinimumQuantity: product.partnerMinimumQuantity,
+      partnerMaximumQuantity: product.partnerMaximumQuantity,
     };
 
     // Conditionally include stock
@@ -474,6 +498,12 @@ export class ProductsService {
       }),
       ...(dto.bulkAvailable !== undefined && {
         bulkAvailable: dto.bulkAvailable ? 1 : 0,
+      }),
+      ...(dto.consumerAvailable !== undefined && {
+        consumerAvailable: dto.consumerAvailable ? 1 : 0,
+      }),
+      ...(dto.partnerAvailable !== undefined && {
+        partnerAvailable: dto.partnerAvailable ? 1 : 0,
       }),
     };
 

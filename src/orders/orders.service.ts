@@ -13,10 +13,11 @@ import { In, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import Stripe from 'stripe';
 import { Order } from '../shared/entities/order.entity';
-import { Cart } from '../shared/entities/cart.entity';
+import { Cart, CartType } from '../shared/entities/cart.entity';
 import { ContactInfo } from '../shared/entities/contact-info.entity';
 import { PaymentOption } from '../shared/entities/payment-option.entity';
 import { CryptoCurrency } from '../shared/entities/crypto-currency.entity';
+import { ProductBulkDetail } from '../shared/entities/product-bulk-detail.entity';
 import { StripeService } from '../stripe/stripe.service';
 import { CoinPaymentsService } from '../coinpayments/coinpayments.service';
 import { CheckoutDto } from './dto/checkout.dto';
@@ -75,6 +76,9 @@ export class OrdersService {
     @InjectRepository(CryptoCurrency)
     private readonly cryptoCurrencyRepo: Repository<CryptoCurrency>,
 
+    @InjectRepository(ProductBulkDetail)
+    private readonly bulkDetailRepo: Repository<ProductBulkDetail>,
+
     @InjectRepository(PointDistributionPurchaseQueue)
     private readonly pointDistributionPurchaseQueueRepo: Repository<PointDistributionPurchaseQueue>,
 
@@ -128,14 +132,58 @@ export class OrdersService {
     // totalAmountPaid is summed elsewhere).
     const paymentCharges = Number(paymentOption.charges) || 0;
 
+    // Re-validate quantity bounds at checkout time — the product's bounds
+    // (or a reseller package's active status) may have changed since the
+    // item was added to the cart. Consumer/partner are checked against the
+    // product's own min/max columns; reseller is checked against the
+    // product_bulk_details package itself rather than a product-level
+    // bound (see CartService.getQuantityBounds for the same split at
+    // add-to-cart time).
+    const resellerBulkDetailIds = cartItems
+      .filter((item) => item.cart_type === CartType.RESELLER)
+      .map((item) => item.productBulkDetailsId)
+      .filter((id): id is number => !!id);
+
+    const activeBulkDetailIds = new Set(
+      resellerBulkDetailIds.length
+        ? (
+            await this.bulkDetailRepo.find({
+              where: { id: In(resellerBulkDetailIds), status: 1 },
+            })
+          ).map((b) => b.id)
+        : [],
+    );
+
     const orders: Order[] = cartItems.map((item) => {
       const unitPrice = Number(item.price_snapshot);
       const discount = Number(item.discount_snapshot || 0);
       const total = item.quantity * (unitPrice - discount);
-      if (item.quantity > 9 && item.cart_type == 'consumer') {
-        throw new NotFoundException(
-          'Consumer can only order 9 quantity of product. Please buy the product from Reseller page.',
-        );
+
+      if (item.cart_type === CartType.RESELLER) {
+        if (
+          !item.productBulkDetailsId ||
+          !activeBulkDetailIds.has(item.productBulkDetailsId)
+        ) {
+          throw new BadRequestException(
+            'Selected bulk package is no longer available for this product.',
+          );
+        }
+      } else if (item.cart_type === CartType.PARTNER) {
+        const min = item.product.partnerMinimumQuantity;
+        const max = item.product.partnerMaximumQuantity;
+        if (item.quantity < min || item.quantity > max) {
+          throw new BadRequestException(
+            `Quantity for this partner item must be between ${min} and ${max}.`,
+          );
+        }
+      } else {
+        const min = item.product.consumerMinimumQuantity;
+        const max = item.product.consumerMaximumQuantity;
+        if (item.quantity < min || item.quantity > max) {
+          throw new BadRequestException(
+            `Quantity for this consumer item must be between ${min} and ${max}.`,
+          );
+        }
       }
 
       return this.orderRepo.create({
@@ -667,6 +715,7 @@ export class OrdersService {
           paymentGatewayId: sessionId,
           paymentStatusId: PENDING_PAYMENT_STATUS_ID,
         },
+        relations: ['product'],
       });
 
       if (!pendingOrders.length) return;
@@ -699,6 +748,12 @@ export class OrdersService {
           route: `/orders/${order.id}`,
           data: { orderId: order.id },
         });
+
+        // Partner-available products never distribute points — skip
+        // queuing this order for the points worker entirely.
+        if (order.product?.partnerAvailable === 1) {
+          continue;
+        }
 
         // totalPoints/remainingPoints start at 0 — the worker looks up the
         // live point_distributions rates and fills these in once it starts

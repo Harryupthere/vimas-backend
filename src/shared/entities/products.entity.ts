@@ -117,6 +117,22 @@ export class Product {
   })
   resellerMaximumQuantity: number;
 
+  @Column({
+    name: 'partner_minimum_quantity',
+    type: 'int',
+    unsigned: true,
+    default: 1,
+  })
+  partnerMinimumQuantity: number;
+
+  @Column({
+    name: 'partner_maximum_quantity',
+    type: 'int',
+    unsigned: true,
+    default: 1,
+  })
+  partnerMaximumQuantity: number;
+
   // Buyer-facing visibility flags — whether the product page should show
   // totalPoints, and whether it should show the per-receiver breakdown of
   // how those points get shared.
@@ -163,6 +179,16 @@ export class Product {
   // returns products where this is 1 (see ProductsService.findAllProductsUsers).
   @Column({ name: 'bulk_available', type: 'tinyint', default: 0 })
   bulkAvailable: number;
+
+  // Gates the consumer product listing — GET /products?type=consumer only
+  // returns products where this is 1 (see ProductsService.findAllProductsUsers).
+  @Column({ name: 'consumer_available', type: 'tinyint', default: 1 })
+  consumerAvailable: number;
+
+  // Gates the partner product listing — GET /products?type=partner only
+  // returns products where this is 1 (see ProductsService.findAllProductsUsers).
+  @Column({ name: 'partner_available', type: 'tinyint', default: 1 })
+  partnerAvailable: number;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

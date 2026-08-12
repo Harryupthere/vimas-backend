@@ -15,6 +15,7 @@ import { ProductBulkDetail } from './product-bulk-detail.entity';
 export enum CartType {
   CONSUMER = 'consumer',
   RESELLER = 'reseller',
+  PARTNER = 'partner',
 }
 
 @Entity('cart')

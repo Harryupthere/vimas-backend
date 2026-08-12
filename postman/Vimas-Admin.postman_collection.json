@@ -836,14 +836,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Wireless Bluetooth Headphones\",\n  \"subTitle\": \"Noise Cancelling Over-Ear\",\n  \"description\": \"High-quality wireless headphones with deep bass.\",\n  \"sellingPrice\": 4999,\n  \"stock\": 120,\n  \"categoryId\": 1,\n  \"brandId\": 1,\n  \"totalPoints\": 100,\n  \"showTotalPoints\": true,\n  \"showPointsSharing\": true,\n  \"bulkAvailable\": true,\n  \"consumerMinimumQuantity\": 1,\n  \"consumerMaximumQuantity\": 9,\n  \"resellerMinimumQuantity\": 1,\n  \"resellerMaximumQuantity\": 100\n}",
+              "raw": "{\n  \"name\": \"Wireless Bluetooth Headphones\",\n  \"subTitle\": \"Noise Cancelling Over-Ear\",\n  \"description\": \"High-quality wireless headphones with deep bass.\",\n  \"sellingPrice\": 4999,\n  \"stock\": 120,\n  \"categoryId\": 1,\n  \"brandId\": 1,\n  \"totalPoints\": 100,\n  \"showTotalPoints\": true,\n  \"showPointsSharing\": true,\n  \"bulkAvailable\": true,\n  \"consumerAvailable\": true,\n  \"partnerAvailable\": true,\n  \"consumerMinimumQuantity\": 1,\n  \"consumerMaximumQuantity\": 9,\n  \"resellerMinimumQuantity\": 1,\n  \"resellerMaximumQuantity\": 100,\n  \"partnerMinimumQuantity\": 1,\n  \"partnerMaximumQuantity\": 100\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "description": "totalPoints is the points pool (per unit) this product carries, split across buyer/upline/pool via each active PointDistribution rule's pointsPercentage. showTotalPoints/showPointsSharing control whether the buyer-facing product detail exposes totalPoints and the per-receiver points breakdown, respectively. bulkAvailable gates whether the product shows up in the reseller listing (GET /products?type=reseller) and its bulk-purchase page. consumerMinimumQuantity/consumerMaximumQuantity and resellerMinimumQuantity/resellerMaximumQuantity bound how many units a buyer can hold in their cart for this product, per cart_type \u2014 enforced in CartService.addToCart. Admin is the sole product creator/owner (no merchant_id column exists anymore)."
+            "description": "totalPoints is the points pool (per unit) this product carries, split across buyer/upline/pool via each active PointDistribution rule's pointsPercentage. showTotalPoints/showPointsSharing control whether the buyer-facing product detail exposes totalPoints and the per-receiver points breakdown, respectively. bulkAvailable/consumerAvailable/partnerAvailable gate whether the product shows up in the reseller (GET /products?type=reseller), consumer (GET /products?type=consumer), and partner (GET /products?type=partner) listings respectively \u2014 consumerAvailable and partnerAvailable default to true when omitted, bulkAvailable defaults to false. consumerMinimumQuantity/consumerMaximumQuantity, resellerMinimumQuantity/resellerMaximumQuantity, and partnerMinimumQuantity/partnerMaximumQuantity bound how many units a buyer can hold in their cart for this product, per cart_type \u2014 enforced in CartService.addToCart. Admin is the sole product creator/owner (no merchant_id column exists anymore)."
           }
         },
         {
@@ -951,7 +951,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": 1\n}",
+              "raw": "{\n  \"status\": 1,\n  \"bulkAvailable\": true,\n  \"consumerAvailable\": true,\n  \"partnerAvailable\": true,\n  \"partnerMinimumQuantity\": 1,\n  \"partnerMaximumQuantity\": 100\n}",
               "options": {
                 "raw": {
                   "language": "json"

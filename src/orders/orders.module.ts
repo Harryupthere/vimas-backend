@@ -8,6 +8,7 @@ import { Cart } from '../shared/entities/cart.entity';
 import { ContactInfo } from '../shared/entities/contact-info.entity';
 import { PaymentOption } from '../shared/entities/payment-option.entity';
 import { CryptoCurrency } from '../shared/entities/crypto-currency.entity';
+import { ProductBulkDetail } from '../shared/entities/product-bulk-detail.entity';
 import { StripeModule } from '../stripe/stripe.module';
 import { CoinPaymentsModule } from '../coinpayments/coinpayments.module';
 import { OrdersService } from './orders.service';
@@ -27,6 +28,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       PaymentOption,
       CryptoCurrency,
       PointDistributionPurchaseQueue,
+      ProductBulkDetail,
     ]),
 
     BullModule.registerQueue({
