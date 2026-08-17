@@ -17,6 +17,7 @@ import { ContactInfo } from './contact-info.entity';
 import { Order } from './order.entity';
 import { PointUserBalance } from './point-user-balance.entity';
 import { PointDistributionPurchaseQueue } from './point-distribution-purchase-queue.entity';
+import { VimasEWalletTransaction } from './vimas-e-wallet-transaction.entity';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
@@ -114,6 +115,28 @@ export class User {
   @UpdateDateColumn({ type: 'timestamp' })
   updated_at: Date;
 
+  // Vimas e-wallet — store credit usable toward normal product checkout
+  // only (never reward_mall_products). Every balance change must go
+  // through VimasEWalletService so a matching VimasEWalletTransaction row
+  // is always created — see vimas-e-wallet.service.ts.
+  @Column({
+    name: 'vimas_e_wallet_balance',
+    type: 'decimal',
+    precision: 18,
+    scale: 2,
+    default: 0,
+  })
+  vimasEWalletBalance: number;
+
+  // 0 = inactive, 1 = active
+  @Column({
+    name: 'vimas_e_wallet_status',
+    type: 'tinyint',
+    width: 1,
+    default: 0,
+  })
+  vimasEWalletStatus: number;
+
   // @Column({ type: 'varchar', length: 255, unique: true })
   // unique_id: string; // New unique_id column
 
@@ -137,4 +160,7 @@ export class User {
 
   @OneToMany(() => PointDistributionPurchaseQueue, (queue) => queue.user)
   pointDistributionQueues: PointDistributionPurchaseQueue[];
+
+  @OneToMany(() => VimasEWalletTransaction, (txn) => txn.user)
+  walletTransactions: VimasEWalletTransaction[];
 }

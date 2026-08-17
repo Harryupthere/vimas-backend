@@ -45,6 +45,11 @@ import { NotificationTypesModule } from './notification-types/notification-types
 import { NotificationsModule } from './notifications/notifications.module';
 import { UserSessionsModule } from './user-sessions/user-sessions.module';
 import { CryptoCurrenciesModule } from './crypto-currencies/crypto-currencies.module';
+import { ProductExtraChargesModule } from './product-extra-charges/product-extra-charges.module';
+import { ProductAddOnsModule } from './product-add-ons/product-add-ons.module';
+import { ProductCouponsModule } from './product-coupons/product-coupons.module';
+import { ProductDiscountsModule } from './product-discounts/product-discounts.module';
+import { VimasEWalletModule } from './vimas-e-wallet/vimas-e-wallet.module';
 import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -122,6 +127,11 @@ import { ScheduleModule } from '@nestjs/schedule';
     NotificationsModule,
     UserSessionsModule,
     CryptoCurrenciesModule,
+    ProductExtraChargesModule,
+    ProductAddOnsModule,
+    ProductCouponsModule,
+    ProductDiscountsModule,
+    VimasEWalletModule,
   ],
   controllers: [AppController],
   providers: [AppService],

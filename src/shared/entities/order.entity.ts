@@ -16,10 +16,36 @@ import { PaymentOption } from './payment-option.entity';
 import { PaymentStatus } from './payment-status.entity';
 import { OrderStatus } from './order-status.entity';
 import { PointDistributionPurchaseQueue } from './point-distribution-purchase-queue.entity';
+import { OrderSnapshot } from './order-snapshot.entity';
+// Imported directly from the leaf enum file, not from cart.entity.ts — see
+// cart-type.enum.ts for why (avoids the cart/user/order require cycle that
+// was corrupting this column's metadata).
+import { CartType } from '../enums/cart-type.enum';
 @Entity('orders')
 export class Order {
   @PrimaryGeneratedColumn('increment')
   id: number;
+
+  @Column({
+    name: 'order_snapshot_id',
+    type: 'bigint',
+    nullable: true,
+  })
+  orderSnapshotId: number | null;
+
+  @ManyToOne(() => OrderSnapshot, (orderSnapshot) => orderSnapshot.orders, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'order_snapshot_id' })
+  orderSnapshot: OrderSnapshot | null;
+
+  @Column({
+    name: 'product_type',
+    type: 'enum',
+    enum: CartType,
+    default: CartType.CONSUMER,
+  })
+  productType: CartType;
 
   @Column({ name: 'buyer_id', type: 'bigint' })
   buyerId: number;
@@ -80,27 +106,6 @@ export class Order {
     scale: 2,
   })
   singleUnitPrice: number;
-
-  @Column({
-    name: 'discount_amount',
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0,
-  })
-  discountAmount: number;
-
-  @Column({ name: 'addon_amount', type: 'json', nullable: true })
-  addonAmount: Record<string, any> | null;
-
-  @Column({ name: 'addon_amount_details', type: 'json', nullable: true })
-  addonAmountDetails: Record<string, any> | null;
-
-  @Column({ name: 'coupon_amount', type: 'json', nullable: true })
-  couponAmount: Record<string, any> | null;
-
-  @Column({ name: 'coupon_amount_details', type: 'json', nullable: true })
-  couponAmountDetails: Record<string, any> | null;
 
   @Column({ name: 'total_amount', type: 'decimal', precision: 10, scale: 2 })
   totalAmount: number;

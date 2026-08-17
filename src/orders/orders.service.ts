@@ -13,6 +13,7 @@ import { In, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import Stripe from 'stripe';
 import { Order } from '../shared/entities/order.entity';
+import { OrderSnapshot } from '../shared/entities/order-snapshot.entity';
 import { Cart, CartType } from '../shared/entities/cart.entity';
 import { ContactInfo } from '../shared/entities/contact-info.entity';
 import { PaymentOption } from '../shared/entities/payment-option.entity';
@@ -28,6 +29,8 @@ import {
   NotificationCategoryName,
   NotificationTypeName,
 } from '../notifications/notification-names';
+import { CheckoutPricingService } from './checkout-pricing.service';
+import { VimasEWalletService } from '../vimas-e-wallet/vimas-e-wallet.service';
 const PENDING_PAYMENT_STATUS_ID = 1;
 const PAID_PAYMENT_STATUS_ID = 2;
 const FAILED_PAYMENT_STATUS_ID = 3;
@@ -64,6 +67,9 @@ export class OrdersService {
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
 
+    @InjectRepository(OrderSnapshot)
+    private readonly orderSnapshotRepo: Repository<OrderSnapshot>,
+
     @InjectRepository(Cart)
     private readonly cartRepo: Repository<Cart>,
 
@@ -88,6 +94,8 @@ export class OrdersService {
     private readonly stripeService: StripeService,
     private readonly coinPaymentsService: CoinPaymentsService,
     private readonly notificationsService: NotificationsService,
+    private readonly checkoutPricingService: CheckoutPricingService,
+    private readonly walletService: VimasEWalletService,
   ) {}
 
   private isCoinPaymentsOptionName(name?: string | null): boolean {
@@ -125,11 +133,12 @@ export class OrdersService {
     // (both Stripe and CoinPayments; see createStripeCheckout /
     // createCoinPaymentsCheckout below), so the buyer is actually charged
     // product cost + gateway fee, matching whatever the admin configured
-    // on this payment_options row. Per-order totalAmount/totalAmountPaid
-    // deliberately stay pure product cost — the fee isn't tied to any one
-    // product, so it's kept out of the order rows entirely rather than
-    // folded into one of them (which would risk double-counting wherever
-    // totalAmountPaid is summed elsewhere).
+    // on this payment_options row. It's kept out of the order rows
+    // entirely (not folded into totalAmount/totalAmountPaid) since it
+    // isn't tied to any one product — see CheckoutPricingService for what
+    // IS folded into each order's totalAmount (pure product subtotal) and
+    // totalAmountPaid (subtotal + that item's extra charges/add-ons -
+    // discounts/coupon - its share of any wallet applied).
     const paymentCharges = Number(paymentOption.charges) || 0;
 
     // Re-validate quantity bounds at checkout time — the product's bounds
@@ -154,11 +163,11 @@ export class OrdersService {
         : [],
     );
 
-    const orders: Order[] = cartItems.map((item) => {
-      const unitPrice = Number(item.price_snapshot);
-      const discount = Number(item.discount_snapshot || 0);
-      const total = item.quantity * (unitPrice - discount);
-
+    // Quantity-bound validation — independent of pricing, kept exactly as
+    // before (re-checked here because the product's bounds, or a reseller
+    // package's active status, may have changed since the item was added
+    // to the cart).
+    for (const item of cartItems) {
       if (item.cart_type === CartType.RESELLER) {
         if (
           !item.productBulkDetailsId ||
@@ -185,41 +194,169 @@ export class OrdersService {
           );
         }
       }
+    }
 
-      return this.orderRepo.create({
-        buyerId,
-        productId: item.product.id,
-        buyerContactDetailsId: contactInfo.id,
-        paymentOptionId,
-        quantity: item.quantity,
-        singleUnitPrice: unitPrice,
-        discountAmount: discount,
-        totalAmount: total,
-        totalAmountPaid: total,
+    // Server-side pricing — extra charges, add-ons, coupons (one per
+    // product), automatic discounts, wallet. Throws for any invalid/
+    // inapplicable coupon or add-on before anything is written to the DB.
+    // See CheckoutPricingService for the full breakdown; nothing here
+    // trusts amounts from the client — only the selections
+    // (couponCodes/addOnIds/useWallet) do.
+    const pricing = await this.checkoutPricingService.calculate(
+      buyerId,
+      cartItems,
+      {
+        addOnIds: dto.addOnIds,
+        couponCodes: dto.couponCodes,
+        useWallet: dto.useWallet,
+      },
+    );
+    const pricingByCartItemId = new Map(
+      pricing.items.map((i) => [i.cartItemId, i]),
+    );
+
+    // Order + order_snapshot + wallet deduction are created atomically —
+    // if anything fails here, nothing is written (requirement #14).
+    const { savedOrders, snapshotId, walletUsed } =
+      await this.orderRepo.manager.transaction(async (manager) => {
+        const orderSnapshotRepo = manager.getRepository(OrderSnapshot);
+        const orderRepo = manager.getRepository(Order);
+
+        const snapshot = await orderSnapshotRepo.save(
+          orderSnapshotRepo.create({
+            totalAmount: pricing.finalAmount,
+            currency: 'MYR',
+            snapshotData: pricing.snapshotData,
+          }),
+        );
+
+        const orders = cartItems.map((item) => {
+          const p = pricingByCartItemId.get(item.id);
+          if (!p) {
+            // Should never happen — every cart item is priced above.
+            throw new BadRequestException('Failed to price cart item');
+          }
+          return orderRepo.create({
+            orderSnapshotId: snapshot.id,
+            buyerId,
+            productId: item.product.id,
+            productType: item.cart_type,
+            buyerContactDetailsId: contactInfo.id,
+            paymentOptionId,
+            quantity: item.quantity,
+            singleUnitPrice: p.unitPrice,
+            totalAmount: p.subtotal,
+            totalAmountPaid: p.payableAfterWallet,
+          });
+        });
+
+        const saved = await orderRepo.save(orders);
+
+        if (pricing.wallet.usedAmount > 0) {
+          await this.walletService.debitForCheckout(
+            manager,
+            buyerId,
+            pricing.wallet.usedAmount,
+            snapshot.id,
+          );
+        }
+
+        return {
+          savedOrders: saved,
+          snapshotId: snapshot.id,
+          walletUsed: pricing.wallet.usedAmount,
+        };
       });
-    });
 
-    const savedOrders = await this.orderRepo.save(orders);
     const orderIds = savedOrders.map((o) => o.id);
+    const totalPayableViaGateway = savedOrders.reduce(
+      (sum, o) => sum + Number(o.totalAmountPaid),
+      0,
+    );
 
-    const isCoinPayments = this.isCoinPaymentsOptionName(paymentOption.name);
+    try {
+      // Wallet covered the entire order — nothing left to charge, skip the
+      // payment gateway and finalize immediately.
+      if (totalPayableViaGateway <= 0) {
+        await this.orderRepo.update(
+          { id: In(orderIds) },
+          {
+            paymentStatusId: PAID_PAYMENT_STATUS_ID,
+            orderStatusId: CONFIRMED_ORDER_STATUS_ID,
+          },
+        );
+        const ordersWithProduct = await this.orderRepo.find({
+          where: { id: In(orderIds) },
+          relations: ['product'],
+        });
+        await this.finalizeOrdersAsPaid(ordersWithProduct);
 
-    if (isCoinPayments) {
-      return this.createCoinPaymentsCheckout(
-        dto,
+        return {
+          data: { checkoutUrl: null, sessionId: null, paidByWallet: true },
+          message: 'Order paid in full using your wallet balance',
+        };
+      }
+
+      const isCoinPayments = this.isCoinPaymentsOptionName(paymentOption.name);
+
+      if (isCoinPayments) {
+        return await this.createCoinPaymentsCheckout(
+          dto,
+          cartItems,
+          savedOrders,
+          orderIds,
+          paymentCharges,
+        );
+      }
+
+      return await this.createStripeCheckout(
         cartItems,
         savedOrders,
         orderIds,
         paymentCharges,
       );
+    } catch (err) {
+      // Order + snapshot + wallet debit already committed above — since the
+      // gateway step failed (createStripeCheckout/createCoinPaymentsCheckout
+      // already deleted the orders themselves), also reverse the wallet
+      // deduction and drop the now-orphaned snapshot so nothing is left
+      // half-applied.
+      if (walletUsed > 0) {
+        await this.walletService.refundForCheckout(
+          buyerId,
+          walletUsed,
+          snapshotId,
+        );
+      }
+      await this.orderSnapshotRepo.delete({ id: snapshotId });
+      throw err;
     }
+  }
 
-    return this.createStripeCheckout(
+  // Buyer-facing checkout-page preview: same calculation as checkout()
+  // itself (via CheckoutPricingService), but read-only — no order/snapshot
+  // is written. Lets the frontend show live totals as the buyer toggles
+  // add-ons / enters a coupon / opts into the wallet.
+  async previewCheckoutPricing(
+    buyerId: number,
+    options: {
+      addOnIds?: number[];
+      couponCodes?: string[];
+      useWallet?: boolean;
+    },
+  ) {
+    const cartItems = await this.cartRepo.find({
+      where: { buyer: { id: buyerId } },
+    });
+    const pricing = await this.checkoutPricingService.calculate(
+      buyerId,
       cartItems,
-      savedOrders,
-      orderIds,
-      paymentCharges,
+      options,
     );
+    return {
+      data: pricing,
+      message: 'Checkout pricing calculated successfully',
+    };
   }
 
   private async createStripeCheckout(
@@ -238,9 +375,11 @@ export class OrdersService {
           quantity: order.quantity,
           price_data: {
             currency,
+            // Discounted per-unit price, derived from the order total
+            // rather than a stored discount_amount column (dropped —
+            // pricing breakdowns now live in order_snapshots instead).
             unit_amount: Math.round(
-              (Number(order.singleUnitPrice) - Number(order.discountAmount)) *
-                100,
+              (Number(order.totalAmountPaid) / order.quantity) * 100,
             ),
             product_data: {
               name: cartItems[idx].product.name,
@@ -730,64 +869,75 @@ export class OrdersService {
         },
       );
 
-      const jobs: PointDistributionPurchaseQueue[] = [];
-      for (const order of pendingOrders) {
-        await this.cartRepo.delete({
-          buyer: { id: order.buyerId },
-          product: { id: order.productId },
-        });
-
-        // best-effort — a notification failure must never block payment
-        // reconciliation or point-distribution queuing
-        void this.notificationsService.notifyUser({
-          userId: order.buyerId,
-          categoryName: NotificationCategoryName.ORDERS,
-          typeName: NotificationTypeName.SUCCESS,
-          heading: 'Order confirmed',
-          subheading: `Your payment for order #${order.id} was successful.`,
-          route: `/orders/${order.id}`,
-          data: { orderId: order.id },
-        });
-
-        // Partner-available products never distribute points — skip
-        // queuing this order for the points worker entirely.
-        if (order.product?.partnerAvailable === 1) {
-          continue;
-        }
-
-        // totalPoints/remainingPoints start at 0 — the worker looks up the
-        // live point_distributions rates and fills these in once it starts
-        // processing (see PointDistributionQueueService.processPurchase).
-        const queue = this.pointDistributionPurchaseQueueRepo.create({
-          userId: order.buyerId.toString(),
-          orderId: order.id.toString(),
-          productId: order.productId.toString(),
-          quantity: order.quantity,
-          totalPoints: '0',
-          remainingPoints: '0',
-        });
-
-        const savedQueue =
-          await this.pointDistributionPurchaseQueueRepo.save(queue);
-
-        jobs.push(savedQueue);
-      }
-
-      for (const job of jobs) {
-        await this.pointDistributionQueue.add(
-          'purchase-distribution',
-          {
-            queueId: job.id,
-          },
-          {
-            attempts: 5,
-            removeOnComplete: 1000,
-            removeOnFail: false,
-          },
-        );
-      }
+      await this.finalizeOrdersAsPaid(pendingOrders);
     } catch (err) {
       console.log(err);
+    }
+  }
+
+  // Post-payment side effects shared by every path that lands an order in
+  // PAID/CONFIRMED: the webhook/cron reconciliation path above, and the
+  // "wallet covered the entire order" path in checkout() (which never
+  // touches a payment gateway, so it finalizes immediately instead of
+  // waiting for a webhook). Callers are responsible for having already set
+  // paymentStatusId/orderStatusId — this only does cart-clear/notify/
+  // point-queue.
+  private async finalizeOrdersAsPaid(orders: Order[]) {
+    const jobs: PointDistributionPurchaseQueue[] = [];
+    for (const order of orders) {
+      await this.cartRepo.delete({
+        buyer: { id: order.buyerId },
+        product: { id: order.productId },
+      });
+
+      // best-effort — a notification failure must never block payment
+      // reconciliation or point-distribution queuing
+      void this.notificationsService.notifyUser({
+        userId: order.buyerId,
+        categoryName: NotificationCategoryName.ORDERS,
+        typeName: NotificationTypeName.SUCCESS,
+        heading: 'Order confirmed',
+        subheading: `Your payment for order #${order.id} was successful.`,
+        route: `/orders/${order.id}`,
+        data: { orderId: order.id },
+      });
+
+      // Partner-available products never distribute points — skip
+      // queuing this order for the points worker entirely.
+      if (order.product?.partnerAvailable === 1) {
+        continue;
+      }
+
+      // totalPoints/remainingPoints start at 0 — the worker looks up the
+      // live point_distributions rates and fills these in once it starts
+      // processing (see PointDistributionQueueService.processPurchase).
+      const queue = this.pointDistributionPurchaseQueueRepo.create({
+        userId: order.buyerId.toString(),
+        orderId: order.id.toString(),
+        productId: order.productId.toString(),
+        quantity: order.quantity,
+        totalPoints: '0',
+        remainingPoints: '0',
+      });
+
+      const savedQueue =
+        await this.pointDistributionPurchaseQueueRepo.save(queue);
+
+      jobs.push(savedQueue);
+    }
+
+    for (const job of jobs) {
+      await this.pointDistributionQueue.add(
+        'purchase-distribution',
+        {
+          queueId: job.id,
+        },
+        {
+          attempts: 5,
+          removeOnComplete: 1000,
+          removeOnFail: false,
+        },
+      );
     }
   }
 
@@ -848,10 +998,25 @@ export class OrdersService {
         'paymentStatus',
         'paymentOption',
         'buyerContactDetails',
+        'orderSnapshot',
       ],
     });
     if (!order) throw new NotFoundException('Order not found');
     return { data: order, message: 'Order' };
+  }
+
+  // Buyer-scoped: only returns a snapshot that belongs to one of the
+  // buyer's own orders, so an id from another buyer's order 404s instead
+  // of leaking their pricing breakdown.
+  async getMyOrderSnapshot(buyerId: number, id: number) {
+    const order = await this.orderRepo.findOne({
+      where: { orderSnapshotId: id, buyerId },
+      relations: ['orderSnapshot'],
+    });
+    if (!order?.orderSnapshot) {
+      throw new NotFoundException('Order snapshot not found');
+    }
+    return { data: order.orderSnapshot, message: 'Order snapshot' };
   }
 
   async findAll(page: number, limit: number, search?: string) {
@@ -901,10 +1066,18 @@ export class OrdersService {
         'paymentStatus',
         'paymentOption',
         'buyerContactDetails',
+        'orderSnapshot',
       ],
     });
     if (!order) throw new NotFoundException('Order not found');
     return { data: order, message: 'Order' };
+  }
+
+  // Admin: unrestricted lookup, unlike getMyOrderSnapshot.
+  async getOrderSnapshot(id: number) {
+    const snapshot = await this.orderSnapshotRepo.findOne({ where: { id } });
+    if (!snapshot) throw new NotFoundException('Order snapshot not found');
+    return { data: snapshot, message: 'Order snapshot' };
   }
 
   async updateStatus(id: number, dto: AdminUpdateOrderDto) {

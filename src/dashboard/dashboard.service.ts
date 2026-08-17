@@ -17,6 +17,11 @@ import { User } from '../shared/entities/user.entity';
 // every order row (which also includes pending/failed/abandoned ones).
 const PAID_PAYMENT_STATUS_ID = 2;
 
+// reward_mall_purchase_status.symbol for the "shipped" state — used to
+// count how many of the user's reward-mall redemptions are currently in
+// shipping.
+const SHIPPED_STATUS_SYMBOL = 'SHIPPED';
+
 // "Recent activities" is a merge of 4 independently-paginated sources
 // (orders, reward mall purchases, point transactions, teammate joins) that
 // has no single underlying table to ORDER BY/LIMIT against. Rather than
@@ -150,51 +155,121 @@ export class DashboardService {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-    const [monthlyEarnedResult, monthlyRedeemedResult, referralRows, trend] =
-      await Promise.all([
-        // current month earnings (CREDIT)
-        this.pointTransactionRepo
-          .createQueryBuilder('pt')
-          .select('COALESCE(SUM(pt.amount), 0)', 'total')
-          .where('pt.wallet_id = :walletId', { walletId: wallet.id })
-          .andWhere('pt.transaction_type = :transactionType', {
-            transactionType: PointTransactionType.CREDIT,
-          })
-          .andWhere('pt.created_at >= :monthStart', { monthStart })
-          .andWhere('pt.created_at < :nextMonthStart', { nextMonthStart })
-          .getRawOne(),
+    // Current calendar week, Monday-start: getDay() is 0 (Sun) .. 6 (Sat),
+    // so the offset back to Monday is -6 on a Sunday and (1 - day) otherwise.
+    const dayOfWeek = now.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const weekStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + mondayOffset,
+    );
+    const nextWeekStart = new Date(
+      weekStart.getFullYear(),
+      weekStart.getMonth(),
+      weekStart.getDate() + 7,
+    );
 
-        // current month redeemed points (DEBIT)
-        this.pointTransactionRepo
-          .createQueryBuilder('pt')
-          .select('COALESCE(SUM(pt.amount), 0)', 'total')
-          .where('pt.wallet_id = :walletId', { walletId: wallet.id })
-          .andWhere('pt.transaction_type = :transactionType', {
-            transactionType: PointTransactionType.DEBIT,
-          })
-          .andWhere('pt.created_at >= :monthStart', { monthStart })
-          .andWhere('pt.created_at < :nextMonthStart', { nextMonthStart })
-          .getRawOne(),
+    const [
+      monthlyEarnedResult,
+      monthlyRedeemedResult,
+      weeklyEarnedResult,
+      weeklyRedeemedResult,
+      shippingCount,
+      referralRows,
+      level1Count,
+      level2Count,
+      trend,
+    ] = await Promise.all([
+      // current month earnings (CREDIT)
+      this.pointTransactionRepo
+        .createQueryBuilder('pt')
+        .select('COALESCE(SUM(pt.amount), 0)', 'total')
+        .where('pt.wallet_id = :walletId', { walletId: wallet.id })
+        .andWhere('pt.transaction_type = :transactionType', {
+          transactionType: PointTransactionType.CREDIT,
+        })
+        .andWhere('pt.created_at >= :monthStart', { monthStart })
+        .andWhere('pt.created_at < :nextMonthStart', { nextMonthStart })
+        .getRawOne(),
 
-        // referral reward counts + totals, split by level
-        this.pointTransactionRepo
-          .createQueryBuilder('pt')
-          .select('pt.transaction_reason', 'transactionReason')
-          .addSelect('COUNT(*)', 'count')
-          .addSelect('COALESCE(SUM(pt.amount), 0)', 'total')
-          .where('pt.wallet_id = :walletId', { walletId: wallet.id })
-          .andWhere('pt.transaction_reason IN (:...reasons)', {
-            reasons: [
-              PointTransactionReason.REFERRAL_LEVEL_1,
-              PointTransactionReason.REFERRAL_LEVEL_2,
-            ],
-          })
-          .groupBy('pt.transaction_reason')
-          .getRawMany(),
+      // current month redeemed points (DEBIT)
+      this.pointTransactionRepo
+        .createQueryBuilder('pt')
+        .select('COALESCE(SUM(pt.amount), 0)', 'total')
+        .where('pt.wallet_id = :walletId', { walletId: wallet.id })
+        .andWhere('pt.transaction_type = :transactionType', {
+          transactionType: PointTransactionType.DEBIT,
+        })
+        .andWhere('pt.created_at >= :monthStart', { monthStart })
+        .andWhere('pt.created_at < :nextMonthStart', { nextMonthStart })
+        .getRawOne(),
 
-        // last 6 months of purchases (paid orders) + points earned
-        this.getMonthlyTrend(userId, wallet.id),
-      ]);
+      // current week (Mon–Sun) earnings (CREDIT)
+      this.pointTransactionRepo
+        .createQueryBuilder('pt')
+        .select('COALESCE(SUM(pt.amount), 0)', 'total')
+        .where('pt.wallet_id = :walletId', { walletId: wallet.id })
+        .andWhere('pt.transaction_type = :transactionType', {
+          transactionType: PointTransactionType.CREDIT,
+        })
+        .andWhere('pt.created_at >= :weekStart', { weekStart })
+        .andWhere('pt.created_at < :nextWeekStart', { nextWeekStart })
+        .getRawOne(),
+
+      // current week (Mon–Sun) redeemed points (DEBIT)
+      this.pointTransactionRepo
+        .createQueryBuilder('pt')
+        .select('COALESCE(SUM(pt.amount), 0)', 'total')
+        .where('pt.wallet_id = :walletId', { walletId: wallet.id })
+        .andWhere('pt.transaction_type = :transactionType', {
+          transactionType: PointTransactionType.DEBIT,
+        })
+        .andWhere('pt.created_at >= :weekStart', { weekStart })
+        .andWhere('pt.created_at < :nextWeekStart', { nextWeekStart })
+        .getRawOne(),
+
+      // reward mall products this user redeemed that are currently in
+      // shipping (reward_mall_purchase.status_id -> status "SHIPPED")
+      this.rewardMallPurchaseRepo
+        .createQueryBuilder('purchase')
+        .innerJoin('purchase.status', 'status')
+        .where('purchase.user_id = :userId', { userId })
+        .andWhere('status.symbol = :symbol', {
+          symbol: SHIPPED_STATUS_SYMBOL,
+        })
+        .getCount(),
+
+      // referral reward point totals, split by level
+      this.pointTransactionRepo
+        .createQueryBuilder('pt')
+        .select('pt.transaction_reason', 'transactionReason')
+        .addSelect('COALESCE(SUM(pt.amount), 0)', 'total')
+        .where('pt.wallet_id = :walletId', { walletId: wallet.id })
+        .andWhere('pt.transaction_reason IN (:...reasons)', {
+          reasons: [
+            PointTransactionReason.REFERRAL_LEVEL_1,
+            PointTransactionReason.REFERRAL_LEVEL_2,
+          ],
+        })
+        .groupBy('pt.transaction_reason')
+        .getRawMany(),
+
+      // level 1 = number of users who joined with this user as their
+      // direct referral
+      this.userRepo.count({ where: { referral: { id: userId } } }),
+
+      // level 2 = number of users referred by this user's level-1
+      // referrals (referral_id -> a user whose own referral_id = userId)
+      this.userRepo
+        .createQueryBuilder('u2')
+        .innerJoin(User, 'u1', 'u1.id = u2.referral_id')
+        .where('u1.referral_id = :userId', { userId })
+        .getCount(),
+
+      // last 6 months of purchases (paid orders) + points earned
+      this.getMonthlyTrend(userId, wallet.id),
+    ]);
 
     const level1 = referralRows.find(
       (r) => r.transactionReason === PointTransactionReason.REFERRAL_LEVEL_1,
@@ -203,9 +278,7 @@ export class DashboardService {
       (r) => r.transactionReason === PointTransactionReason.REFERRAL_LEVEL_2,
     );
 
-    const level1Count = Number(level1?.count ?? 0);
     const level1Total = Number(level1?.total ?? 0);
-    const level2Count = Number(level2?.count ?? 0);
     const level2Total = Number(level2?.total ?? 0);
 
     return {
@@ -221,7 +294,14 @@ export class DashboardService {
           earnedPoints: Number(monthlyEarnedResult.total),
           redeemedPoints: Number(monthlyRedeemedResult.total),
         },
+        currentWeek: {
+          earnedPoints: Number(weeklyEarnedResult.total),
+          redeemedPoints: Number(weeklyRedeemedResult.total),
+        },
+        rewardProductsInShipping: shippingCount,
         referrals: {
+          // count = distinct referred users at that level; total = points
+          // this user earned from that level's referral rewards
           level1: { count: level1Count, total: level1Total },
           level2: { count: level2Count, total: level2Total },
           total: {

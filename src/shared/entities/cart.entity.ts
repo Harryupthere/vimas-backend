@@ -8,15 +8,16 @@ import {
   Unique,
   JoinColumn,
 } from 'typeorm';
+// Re-exported from a dependency-free leaf file rather than declared here —
+// see cart-type.enum.ts for why (breaks a fragile cart/user/order require
+// cycle). Kept as a re-export, and imported first (before the User/Product
+// imports below, which are what actually trigger that cycle), so existing
+// `import { CartType } from '.../cart.entity'` call sites are unaffected.
+import { CartType } from '../enums/cart-type.enum';
+export { CartType };
 import { User } from './user.entity';
 import { Product } from './products.entity';
 import { ProductBulkDetail } from './product-bulk-detail.entity';
-
-export enum CartType {
-  CONSUMER = 'consumer',
-  RESELLER = 'reseller',
-  PARTNER = 'partner',
-}
 
 @Entity('cart')
 // A buyer can hold one consumer row AND, separately, one reseller row per

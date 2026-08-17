@@ -24,6 +24,34 @@ export class OrdersController {
     return this.ordersService.checkout(req.user.id, dto);
   }
 
+  // Buyer: checkout-page pricing preview — extra charges, add-ons,
+  // discounts, coupons (one per product, if provided), and wallet info,
+  // all calculated server-side from the current cart. No order/snapshot
+  // is written.
+  @Get('checkout/pricing')
+  previewCheckoutPricing(
+    @Req() req: any,
+    @Query('couponCodes') couponCodes?: string,
+    @Query('addOnIds') addOnIds?: string,
+    @Query('useWallet') useWallet?: string,
+  ) {
+    return this.ordersService.previewCheckoutPricing(req.user.id, {
+      couponCodes: couponCodes
+        ? couponCodes
+            .split(',')
+            .map((code) => code.trim())
+            .filter((code) => !!code)
+        : undefined,
+      addOnIds: addOnIds
+        ? addOnIds
+            .split(',')
+            .map((id) => +id)
+            .filter((id) => !Number.isNaN(id))
+        : undefined,
+      useWallet: useWallet === 'true',
+    });
+  }
+
   // Buyer: poll payment/order status by Stripe session id (frontend redirect callback)
   @Get('status')
   getStatus(@Req() req: any, @Query('sessionId') sessionId: string) {
@@ -43,5 +71,10 @@ export class OrdersController {
   @Get('my/:id')
   findMyOrder(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.ordersService.findMyOrder(req.user.id, id);
+  }
+
+  @Get('snapshots/:id')
+  getMyOrderSnapshot(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.getMyOrderSnapshot(req.user.id, id);
   }
 }

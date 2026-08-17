@@ -58,15 +58,6 @@ export class ProductBulkDetail {
   fees: number;
 
   @Column({
-    name: 'shipping_charges',
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0,
-  })
-  shippingCharges: number;
-
-  @Column({
     name: 'total_price',
     type: 'decimal',
     precision: 12,

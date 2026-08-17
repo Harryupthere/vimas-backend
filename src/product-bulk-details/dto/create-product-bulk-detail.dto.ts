@@ -30,11 +30,6 @@ export class CreateProductBulkDetailDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  shippingCharges?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
   totalPrice?: number;
 
   @IsOptional()

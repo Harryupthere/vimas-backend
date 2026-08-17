@@ -34,6 +34,11 @@ export class OrdersAdminController {
     return this.ordersService.findOne(id);
   }
 
+  @Get('snapshots/:id')
+  getOrderSnapshot(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.getOrderSnapshot(id);
+  }
+
   @Patch(':id/status')
   updateStatus(
     @Param('id', ParseIntPipe) id: number,

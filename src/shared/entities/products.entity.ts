@@ -18,6 +18,10 @@ import { Order } from './order.entity';
 import { ReviewRating } from './review-rating.entity';
 import { ProductHistory } from './product-history.entity';
 import { PointDistributionPurchaseQueue } from './point-distribution-purchase-queue.entity';
+import { ProductExtraCharge } from './product-extra-charge.entity';
+import { ProductAddOn } from './product-add-on.entity';
+import { ProductCoupon } from './product-coupon.entity';
+import { ProductDiscount } from './product-discount.entity';
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn('increment')
@@ -237,4 +241,16 @@ export class Product {
 
   @OneToMany(() => PointDistributionPurchaseQueue, (queue) => queue.product)
   pointDistributionQueues: PointDistributionPurchaseQueue[];
+
+  @OneToMany(() => ProductExtraCharge, (charge) => charge.product)
+  extraCharges: ProductExtraCharge[];
+
+  @OneToMany(() => ProductAddOn, (addOn) => addOn.product)
+  addOns: ProductAddOn[];
+
+  @OneToMany(() => ProductCoupon, (coupon) => coupon.product)
+  coupons: ProductCoupon[];
+
+  @OneToMany(() => ProductDiscount, (discount) => discount.product)
+  discounts: ProductDiscount[];
 }

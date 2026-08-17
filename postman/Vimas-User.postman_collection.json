@@ -904,6 +904,129 @@
       ]
     },
     {
+      "name": "Product Add-Ons",
+      "item": [
+        {
+          "name": "List Product Add-Ons For Product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product-add-ons/product/:productId?productType=CONSUMER",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-add-ons",
+                "product",
+                ":productId"
+              ],
+              "query": [
+                {
+                  "key": "productType",
+                  "value": "CONSUMER",
+                  "description": "Required \u2014 CONSUMER, RESELLER or PARTNER, matching the cart item's product type"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Buyer: active, opt-in add-ons for this product + product type, shown on the checkout page (e.g. gift packaging). Pass the ids the buyer selects as addOnIds on the checkout request \u2014 pricing is calculated server-side."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product Discounts",
+      "item": [
+        {
+          "name": "List Product Discounts For Product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product-discounts/product/:productId?productType=CONSUMER",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-discounts",
+                "product",
+                ":productId"
+              ],
+              "query": [
+                {
+                  "key": "productType",
+                  "value": "CONSUMER",
+                  "description": "Required \u2014 CONSUMER, RESELLER or PARTNER, matching the cart item's product type"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Buyer: automatic discounts available for this product + product type, further filtered to ones currently within their start/end date window. These are never opt-in \u2014 the best-matching one is applied automatically at checkout."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product Extra Charges",
+      "item": [
+        {
+          "name": "List Product Extra Charges For Product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/product-extra-charges/product/:productId?productType=CONSUMER",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product-extra-charges",
+                "product",
+                ":productId"
+              ],
+              "query": [
+                {
+                  "key": "productType",
+                  "value": "CONSUMER",
+                  "description": "Required \u2014 CONSUMER, RESELLER or PARTNER, matching the cart item's product type"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Buyer: extra charges (e.g. processing fee) that will be auto-applied to this product + product type at checkout, shown here so the buyer can see them ahead of time."
+          }
+        }
+      ]
+    },
+    {
       "name": "Product Media",
       "item": [
         {
@@ -1533,6 +1656,94 @@
           }
         },
         {
+          "name": "Checkout Cart with Coupons/Add-ons/Wallet (Stripe)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders/checkout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "checkout"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactInfoId\": 1,\n  \"paymentOptionId\": 1,\n  \"couponCodes\": [\n    \"SAVE10\",\n    \"PARTNER5\"\n  ],\n  \"addOnIds\": [\n    1,\n    2\n  ],\n  \"useWallet\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Same endpoint as the plain Stripe checkout above \u2014 couponCodes/addOnIds/useWallet are all optional selections/intent only. couponCodes takes one code per product (each code is matched to its own cart item and validated independently \u2014 two codes may not target the same product). The backend looks each of them up in the DB, validates eligibility (product/product type/quantity/active/validity), and computes every extra charge, add-on amount, discount, coupon discount and wallet deduction itself; nothing calculated on the client is trusted. See GET orders/checkout/pricing to preview these numbers before submitting."
+          }
+        },
+        {
+          "name": "Checkout Pricing Preview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/checkout/pricing?couponCodes=SAVE10,PARTNER5&addOnIds=1,2&useWallet=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "checkout",
+                "pricing"
+              ],
+              "query": [
+                {
+                  "key": "couponCodes",
+                  "value": "SAVE10,PARTNER5",
+                  "description": "Optional \u2014 comma-separated coupon codes, one per product; omit to preview without any coupon applied"
+                },
+                {
+                  "key": "addOnIds",
+                  "value": "1,2",
+                  "description": "Optional \u2014 comma-separated product_add_ons ids to preview"
+                },
+                {
+                  "key": "useWallet",
+                  "value": "true",
+                  "description": "Optional \u2014 true to preview with the wallet balance applied"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Read-only checkout-page preview: applicable extra charges, eligible add-ons, automatic discounts, coupons (one per product, if provided) and wallet info (only if the wallet is active), all calculated server-side from the current cart \u2014 no order or order_snapshot is created. The response's items array breaks everything down per product (and per product type, for a mixed consumer/partner/reseller cart), so the frontend can render a per-product breakdown directly."
+          }
+        },
+        {
           "name": "Check Order Status By Stripe Session",
           "request": {
             "method": "GET",
@@ -1637,6 +1848,107 @@
                 }
               ]
             }
+          }
+        },
+        {
+          "name": "Get My Order Snapshot",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/snapshots/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "snapshots",
+                ":id"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Full pricing breakdown for one of the buyer's own orders \u2014 the id is order_snapshot_id on the order (from My Order Detail)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallet (Buyer)",
+      "item": [
+        {
+          "name": "My Wallet Balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/wallet",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "wallet"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Current balance + active/inactive status for the authenticated buyer."
+          }
+        },
+        {
+          "name": "My Wallet Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/wallet/transactions?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "wallet",
+                "transactions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "The buyer's own CREDIT/DEBIT/CHECKOUT/REFUND ledger, newest first."
           }
         }
       ]
