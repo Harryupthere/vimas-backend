@@ -50,6 +50,7 @@ import { ProductAddOnsModule } from './product-add-ons/product-add-ons.module';
 import { ProductCouponsModule } from './product-coupons/product-coupons.module';
 import { ProductDiscountsModule } from './product-discounts/product-discounts.module';
 import { VimasEWalletModule } from './vimas-e-wallet/vimas-e-wallet.module';
+import { SearchModule } from './search/search.module';
 import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -132,6 +133,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ProductCouponsModule,
     ProductDiscountsModule,
     VimasEWalletModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

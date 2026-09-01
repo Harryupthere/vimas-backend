@@ -2901,6 +2901,286 @@
       ]
     },
     {
+      "name": "Search",
+      "item": [
+        {
+          "name": "Overall Search (All Categories)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/search?q=&page=1&limit=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Keyword to match; omit to just list"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "description": "Per-category cap in combined mode"
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "reseller | consumer | partner | reward_mall | referral | all",
+                  "disabled": true
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "One endpoint backing the frontend's overall search bar. `type` picks a dropdown category: reseller | consumer | partner (products, gated the same way as GET /products?type=... via bulk_available/consumer_available/partner_available) | reward_mall (reward_mall_products) | referral (the caller's own direct downline, users.referral_id = caller id) | all (default \u2014 runs every category at once for a combined preview, each capped at `limit`). `q` is the keyword; omit it to just browse the category. Product/reward-mall categories match q against name, sub_title, description, information, notes, search_keywords, and each item returns { id, name, subTitle, description, category, image, sellingPrice/pointPrice }. The referral category matches q against first_name, last_name, username, unique_user_id, email and returns { id, uniqueUserId, username, firstName, lastName, fullName, email, image, status } \u2014 no product fields. Every group and item also carries `categoryLabel` (Consumer | Vimas Products | Vimas Partner | Reward Mall | Teammates) and `route` (the frontend path for that category's listing page: dashboard/mall/consumer | dashboard/mall/reseller/vimas-products | dashboard/mall/reseller/vimas-partners | dashboard/rewards | dashboard/teammates/level-1) so the frontend can redirect there directly off this response."
+          }
+        },
+        {
+          "name": "Search Consumer Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/search?type=consumer&q=&page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "consumer"
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Products with consumer_available = 1, status = 1, matched against name/sub_title/description/information/notes/search_keywords. Every group and item also carries `categoryLabel` (Consumer | Vimas Products | Vimas Partner | Reward Mall | Teammates) and `route` (the frontend path for that category's listing page: dashboard/mall/consumer | dashboard/mall/reseller/vimas-products | dashboard/mall/reseller/vimas-partners | dashboard/rewards | dashboard/teammates/level-1) so the frontend can redirect there directly off this response."
+          }
+        },
+        {
+          "name": "Search Reseller (Bulk) Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/search?type=reseller&q=&page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "reseller"
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Products with bulk_available = 1, status = 1, matched against name/sub_title/description/information/notes/search_keywords. Every group and item also carries `categoryLabel` (Consumer | Vimas Products | Vimas Partner | Reward Mall | Teammates) and `route` (the frontend path for that category's listing page: dashboard/mall/consumer | dashboard/mall/reseller/vimas-products | dashboard/mall/reseller/vimas-partners | dashboard/rewards | dashboard/teammates/level-1) so the frontend can redirect there directly off this response."
+          }
+        },
+        {
+          "name": "Search Partner Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/search?type=partner&q=&page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "partner"
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Products with partner_available = 1, status = 1, matched against name/sub_title/description/information/notes/search_keywords. Every group and item also carries `categoryLabel` (Consumer | Vimas Products | Vimas Partner | Reward Mall | Teammates) and `route` (the frontend path for that category's listing page: dashboard/mall/consumer | dashboard/mall/reseller/vimas-products | dashboard/mall/reseller/vimas-partners | dashboard/rewards | dashboard/teammates/level-1) so the frontend can redirect there directly off this response."
+          }
+        },
+        {
+          "name": "Search Reward Mall Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/search?type=reward_mall&q=&page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "reward_mall"
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "reward_mall_products with status = 1, matched against name/sub_title/description/information/notes/search_keywords. Every group and item also carries `categoryLabel` (Consumer | Vimas Products | Vimas Partner | Reward Mall | Teammates) and `route` (the frontend path for that category's listing page: dashboard/mall/consumer | dashboard/mall/reseller/vimas-products | dashboard/mall/reseller/vimas-partners | dashboard/rewards | dashboard/teammates/level-1) so the frontend can redirect there directly off this response."
+          }
+        },
+        {
+          "name": "Search My Referrals",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/search?type=referral&q=&page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "referral"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Matches first_name/last_name/username/unique_user_id/email"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Only the caller's own direct downline (users.referral_id = caller's id), matched against first_name/last_name/username/unique_user_id/email. Every group and item also carries `categoryLabel` (Consumer | Vimas Products | Vimas Partner | Reward Mall | Teammates) and `route` (the frontend path for that category's listing page: dashboard/mall/consumer | dashboard/mall/reseller/vimas-products | dashboard/mall/reseller/vimas-partners | dashboard/rewards | dashboard/teammates/level-1) so the frontend can redirect there directly off this response."
+          }
+        }
+      ]
+    },
+    {
       "name": "Product Feedback",
       "item": [
         {
