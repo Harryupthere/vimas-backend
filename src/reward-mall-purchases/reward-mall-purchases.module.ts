@@ -10,6 +10,7 @@ import { PointTransaction } from '../shared/entities/point-transaction.entity';
 import { RewardMallPurchasesService } from './reward-mall-purchases.service';
 import { RewardMallPurchasesUserController } from './user/reward-mall-purchases.controller';
 import { RewardMallPurchasesAdminController } from './admin/reward-mall-purchases.controller';
+import { RewardMallReceiptsModule } from '../reward-mall-receipts/reward-mall-receipts.module';
 
 @Module({
   imports: [
@@ -19,6 +20,10 @@ import { RewardMallPurchasesAdminController } from './admin/reward-mall-purchase
       PointUserBalance,
       PointTransaction,
     ]),
+    // Used for RewardMallReceiptsService.ensureGenerationStarted (kicked off
+    // once admin accepts a redemption) and .getStatusesForInvoiceIds (the
+    // `receipt` field on findMine) — see RewardMallPurchasesService.
+    RewardMallReceiptsModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your_jwt_secret',

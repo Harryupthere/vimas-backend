@@ -39,6 +39,19 @@ export class Order {
   @JoinColumn({ name: 'order_snapshot_id' })
   orderSnapshot: OrderSnapshot | null;
 
+  // Shared by every row from the same checkout (assigned in
+  // OrdersService.checkout, keyed off order_snapshot_id — not
+  // payment_gateway_id, which isn't set at this point and stays NULL
+  // forever for a wallet-only checkout). Indexed but not unique at the DB
+  // level; relates to `receipts.invoice_id` at the application level only.
+  @Column({
+    name: 'invoice_id',
+    type: 'varchar',
+    length: 30,
+    nullable: true,
+  })
+  invoiceId: string | null;
+
   @Column({
     name: 'product_type',
     type: 'enum',

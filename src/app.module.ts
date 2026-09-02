@@ -14,6 +14,7 @@ import { RewardMallProductsModule } from './reward-mall-products/reward-mall-pro
 import { RewardMallProductMediaModule } from './reward-mall-product-media/reward-mall-product-media.module';
 import { RewardMallPurchaseStatusModule } from './reward-mall-purchase-status/reward-mall-purchase-status.module';
 import { RewardMallPurchasesModule } from './reward-mall-purchases/reward-mall-purchases.module';
+import { RewardMallReceiptsModule } from './reward-mall-receipts/reward-mall-receipts.module';
 import { ProductLikesModule } from './product-likes/product-likes.module';
 import { ProductViewsModule } from './product-views/product-views.module';
 import { RegistrationTypesModule } from './registration_types/registration_types.module';
@@ -32,6 +33,7 @@ import { ContactInfoModule } from './contact-info/contact-info.module';
 import { OrderStatusModule } from './order-status/order-status.module';
 import { PaymentStatusModule } from './payment-status/payment-status.module';
 import { OrdersModule } from './orders/orders.module';
+import { ReceiptsModule } from './receipts/receipts.module';
 import { ReviewRatingModule } from './review-rating/review-rating.module';
 import { ProductHistoryModule } from './product-history/product-history.module';
 import { PointDistributionModule } from './point-distribution/point-distribution.module';
@@ -98,6 +100,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     RewardMallProductMediaModule,
     RewardMallPurchaseStatusModule,
     RewardMallPurchasesModule,
+    RewardMallReceiptsModule,
     ProductLikesModule,
     ProductViewsModule,
     RegistrationTypesModule,
@@ -115,6 +118,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     OrderStatusModule,
     PaymentStatusModule,
     OrdersModule,
+    ReceiptsModule,
     ReviewRatingModule,
     ProductHistoryModule,
     PointDistributionModule,

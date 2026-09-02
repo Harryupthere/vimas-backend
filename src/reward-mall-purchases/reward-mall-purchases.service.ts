@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -16,6 +18,9 @@ import {
 } from '../shared/entities/point-transaction.entity';
 import { CreateRewardMallPurchaseDto } from './dto/create-reward-mall-purchase.dto';
 import { AdminUpdateRewardMallPurchaseDto } from './dto/admin-update-reward-mall-purchase.dto';
+import { RewardMallReceiptsService } from '../reward-mall-receipts/reward-mall-receipts.service';
+import { generateInvoiceId } from '../shared/utils/invoice-id.util';
+import { ACCEPTED_REWARD_MALL_PURCHASE_STATUS_ID } from '../shared/constants/reward-mall-purchase-status.constants';
 
 // Convention shared with orders (order_status_id/payment_status_id default
 // to 1): the first admin-seeded reward_mall_purchase_status row is treated
@@ -24,13 +29,38 @@ const DEFAULT_PURCHASE_STATUS_ID = 1;
 
 @Injectable()
 export class RewardMallPurchasesService {
+  private readonly logger = new Logger(RewardMallPurchasesService.name);
+
   constructor(
     @InjectRepository(RewardMallPurchase)
     private readonly purchaseRepo: Repository<RewardMallPurchase>,
 
     @InjectRepository(RewardMallProduct)
     private readonly productRepo: Repository<RewardMallProduct>,
+
+    private readonly rewardMallReceiptsService: RewardMallReceiptsService,
   ) {}
+
+  // Unlike orders.invoice_id (shared by every row in one checkout), this is
+  // 1:1 with the purchase row — check-and-regenerate against this repo is
+  // enough. No DB-level unique constraint on reward_mall_purchase.invoice_id
+  // (only an index) to catch a collision for us; nanoid's keyspace at this
+  // length makes an actual collision astronomically unlikely regardless —
+  // see generateInvoiceId.
+  private async generateUniqueInvoiceId(
+    purchaseRepo: Repository<RewardMallPurchase>,
+  ): Promise<string> {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const candidate = generateInvoiceId();
+      const clash = await purchaseRepo.findOne({
+        where: { invoiceId: candidate },
+      });
+      if (!clash) return candidate;
+    }
+    throw new InternalServerErrorException(
+      'Failed to generate a unique invoice id',
+    );
+  }
 
   // PointUserBalance/PointTransaction are accessed exclusively via
   // `manager.getRepository(...)` inside the transaction below (same
@@ -138,9 +168,12 @@ export class RewardMallPurchasesService {
         }),
       );
 
+      const invoiceId = await this.generateUniqueInvoiceId(purchaseRepo);
+
       const purchase = purchaseRepo.create({
         userId,
         rewardMallProductId: product.id,
+        invoiceId,
         quantity,
         pointsRedeemed: pointsRequired,
         statusId: DEFAULT_PURCHASE_STATUS_ID,
@@ -171,9 +204,30 @@ export class RewardMallPurchasesService {
 
     const [data, total] = await query.getManyAndCount();
 
+    // Same `receipt` field convention as OrdersService.findMyOrders:
+    // `not_created` means no receipts row exists yet for this invoice_id,
+    // distinct from `pending` (a generate job is in flight). Purchases from
+    // before the invoice_id column existed get `receipt: null`.
+    const invoiceIds = [
+      ...new Set(
+        data
+          .map((purchase) => purchase.invoiceId)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+    const statusByInvoiceId =
+      await this.rewardMallReceiptsService.getStatusesForInvoiceIds(invoiceIds);
+
+    const purchases = data.map((purchase) => ({
+      ...purchase,
+      receipt: purchase.invoiceId
+        ? { status: statusByInvoiceId.get(purchase.invoiceId) ?? 'not_created' }
+        : null,
+    }));
+
     return {
       data: {
-        purchases: data,
+        purchases,
         page,
         limit,
         total,
@@ -263,6 +317,9 @@ export class RewardMallPurchasesService {
       throw new NotFoundException('Reward mall purchase not found');
     }
 
+    const statusChanged =
+      dto.statusId !== undefined && dto.statusId !== purchase.statusId;
+
     if (dto.adminRemark && dto.adminRemark.length) {
       const existing = purchase.adminRemark ?? [];
       purchase.adminRemark = [...existing, ...dto.adminRemark];
@@ -277,6 +334,28 @@ export class RewardMallPurchasesService {
     }
 
     await this.purchaseRepo.save(purchase);
+
+    // Kick off receipt generation the moment admin sets statusId to 2
+    // ("Accepted" — see ACCEPTED_REWARD_MALL_PURCHASE_STATUS_ID). Best-
+    // effort: a failure here must never block the admin's fulfilment
+    // update from saving.
+    const invoiceId = purchase.invoiceId;
+    if (
+      statusChanged &&
+      invoiceId &&
+      purchase.statusId === ACCEPTED_REWARD_MALL_PURCHASE_STATUS_ID
+    ) {
+      try {
+        await this.rewardMallReceiptsService.ensureGenerationStarted(invoiceId);
+      } catch (err) {
+        this.logger.error(
+          `Failed to start receipt generation for reward mall invoice ${invoiceId}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+      }
+    }
+
     return {
       data: purchase,
       message: 'Reward mall purchase updated successfully',

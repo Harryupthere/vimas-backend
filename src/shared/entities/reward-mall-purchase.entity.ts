@@ -30,6 +30,20 @@ export class RewardMallPurchase {
   @JoinColumn({ name: 'reward_mall_product_id' })
   product: RewardMallProduct;
 
+  // Unlike orders.invoice_id (shared by every row from one checkout), this
+  // is 1:1 with the purchase row — one redemption is always a single
+  // product, so there's no grouping to do. Assigned at redemption time in
+  // RewardMallPurchasesService.purchase(). Indexed but not unique at the DB
+  // level; relates to `reward_mall_receipts.invoice_id` at the application
+  // level only.
+  @Column({
+    name: 'invoice_id',
+    type: 'varchar',
+    length: 30,
+    nullable: true,
+  })
+  invoiceId: string | null;
+
   @Column({ type: 'int', unsigned: true, default: 1 })
   quantity: number;
 

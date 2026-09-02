@@ -229,6 +229,6 @@ export class CreateProductPricingAndWallet1786400000000
       );
     }
 
-    await queryRunner.query(`DROP TABLE IF EXISTS order_snapshots`);
+    // await queryRunner.query(`DROP TABLE IF EXISTS order_snapshots`);
   }
 }

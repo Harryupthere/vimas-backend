@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Invoice {{invoice_id}}</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: #1f2430;
+    font-size: 12px;
+    margin: 0;
+  }
+
+  .sheet {
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  /* ---------- header ---------- */
+  .header {
+    display: table;
+    width: 100%;
+    margin-bottom: 18px;
+  }
+
+  .header-left,
+  .header-right {
+    display: table-cell;
+    vertical-align: top;
+  }
+
+  .header-right {
+    text-align: right;
+  }
+
+  .brand {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .brand-sub {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 3px;
+    line-height: 1.5;
+  }
+
+  .doc-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #9ca3af;
+    letter-spacing: 1px;
+  }
+
+  .meta-table {
+    margin-top: 10px;
+    margin-left: auto;
+    border-collapse: collapse;
+  }
+
+  .meta-table th,
+  .meta-table td {
+    border: 1px solid #d1d5db;
+    padding: 5px 10px;
+    font-size: 10.5px;
+  }
+
+  .meta-table th {
+    background: #f3f4f6;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #6b7280;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  hr.divider {
+    border: none;
+    border-top: 2px solid #1f2430;
+    margin: 0 0 20px 0;
+  }
+
+  /* ---------- bill to / payment ---------- */
+  .parties {
+    display: table;
+    width: 100%;
+    margin-bottom: 22px;
+  }
+
+  .party-block {
+    display: table-cell;
+    width: 50%;
+    vertical-align: top;
+    padding-right: 16px;
+  }
+
+  .party-label {
+    background: #f3f4f6;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #374151;
+    font-weight: 700;
+    padding: 5px 8px;
+    margin-bottom: 6px;
+  }
+
+  .party-value {
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 0 8px;
+  }
+
+  /* ---------- items table ---------- */
+  table.items {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 4px;
+    table-layout: fixed;
+  }
+
+  table.items col.col-product { width: 46%; }
+  table.items col.col-qty     { width: 14%; }
+  table.items col.col-price   { width: 20%; }
+  table.items col.col-total   { width: 20%; }
+
+  table.items thead th {
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #ffffff;
+    background: #1f2430;
+    padding: 8px 10px;
+    border: 1px solid #1f2430;
+  }
+
+  table.items thead th.num,
+  table.items tbody td.num {
+    text-align: right;
+  }
+
+  table.items tbody tr {
+    page-break-inside: avoid; /* a row never splits across two PDF pages */
+  }
+
+  table.items tbody tr:nth-child(even) {
+    background: #f9fafb;
+  }
+
+  table.items tbody td {
+    padding: 8px 10px;
+    border: 1px solid #e5e7eb;
+    vertical-align: top;
+    word-wrap: break-word;
+  }
+
+  /* ---------- totals ---------- */
+  .totals-wrap {
+    display: table;
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 30px;
+  }
+
+  .totals-spacer {
+    display: table-cell;
+  }
+
+  .totals-box {
+    display: table-cell;
+    width: 260px;
+  }
+
+  .totals-box table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .totals-box td {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .totals-box tr.grand td {
+    border-top: 2px solid #1f2430;
+    font-size: 14px;
+    font-weight: 700;
+    padding-top: 10px;
+  }
+
+  .totals-box td.label {
+    color: #6b7280;
+  }
+
+  .totals-box td.value {
+    text-align: right;
+  }
+
+  /* ---------- footer ---------- */
+  .thanks {
+    text-align: center;
+    font-size: 13px;
+    font-style: italic;
+    color: #374151;
+    margin-bottom: 14px;
+  }
+
+  .footer {
+    font-size: 10px;
+    color: #9ca3af;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 10px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="brand">VIMAS</div>
+      <div class="brand-sub">{{company_address_line}}</div>
+    </div>
+    <div class="header-right">
+      <div class="doc-title">INVOICE</div>
+      <table class="meta-table">
+        <tr>
+          <th>Invoice #</th>
+          <th>Date</th>
+        </tr>
+        <tr>
+          <td>{{invoice_id}}</td>
+          <td>{{order_date}}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <div class="parties">
+    <div class="party-block">
+      <div class="party-label">Bill To</div>
+      <div class="party-value">
+        {{buyer_name}}<br />
+        {{buyer_address}}<br />
+        {{buyer_phone}}<br />
+        {{buyer_email}}
+      </div>
+    </div>
+    <div class="party-block">
+      <div class="party-label">Payment</div>
+      <div class="party-value">
+        Payment ID: {{payment_gateway_id}}<br />
+        Method: {{payment_method}}<br />
+        Status: {{payment_status}}
+      </div>
+    </div>
+  </div>
+
+  <table class="items">
+    <colgroup>
+      <col class="col-product" />
+      <col class="col-qty" />
+      <col class="col-price" />
+      <col class="col-total" />
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th class="num">Qty</th>
+        <th class="num">Unit Price</th>
+        <th class="num">Line Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each items}}
+      <tr>
+        <td>{{this.product_name}}</td>
+        <td class="num">{{this.quantity}}</td>
+        <td class="num">{{this.single_unit_price}}</td>
+        <td class="num">{{this.line_total}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
+  <div class="totals-wrap">
+    <div class="totals-spacer"></div>
+    <div class="totals-box">
+      <table>
+        <tr>
+          <td class="label">Subtotal</td>
+          <td class="value">{{subtotal}}</td>
+        </tr>
+        <tr class="grand">
+          <td class="label">Total Paid</td>
+          <td class="value">{{total_amount_paid}}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="thanks">Thank you for shopping with Vimas!</div>
+
+  <div class="footer">
+    This is a computer-generated receipt for Invoice {{invoice_id}} and does not require a signature.<br />
+    Questions? {{company_support_email}}
+  </div>
+
+</div>
+</body>
+</html>

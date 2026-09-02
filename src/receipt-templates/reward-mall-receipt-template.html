@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Reward Receipt {{invoice_id}}</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: #1f2430;
+    font-size: 12px;
+    margin: 0;
+  }
+
+  .sheet {
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  /* ---------- header ---------- */
+  .header {
+    display: table;
+    width: 100%;
+    margin-bottom: 18px;
+  }
+
+  .header-left,
+  .header-right {
+    display: table-cell;
+    vertical-align: top;
+  }
+
+  .header-right {
+    text-align: right;
+  }
+
+  .brand {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .brand-sub {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 3px;
+    line-height: 1.5;
+  }
+
+  .doc-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #9ca3af;
+    letter-spacing: 1px;
+  }
+
+  .meta-table {
+    margin-top: 10px;
+    margin-left: auto;
+    border-collapse: collapse;
+  }
+
+  .meta-table th,
+  .meta-table td {
+    border: 1px solid #d1d5db;
+    padding: 5px 10px;
+    font-size: 10.5px;
+  }
+
+  .meta-table th {
+    background: #f3f4f6;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #6b7280;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  hr.divider {
+    border: none;
+    border-top: 2px solid #1f2430;
+    margin: 0 0 20px 0;
+  }
+
+  /* ---------- redeemed by / status ---------- */
+  .parties {
+    display: table;
+    width: 100%;
+    margin-bottom: 22px;
+  }
+
+  .party-block {
+    display: table-cell;
+    width: 50%;
+    vertical-align: top;
+    padding-right: 16px;
+  }
+
+  .party-label {
+    background: #f3f4f6;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #374151;
+    font-weight: 700;
+    padding: 5px 8px;
+    margin-bottom: 6px;
+  }
+
+  .party-value {
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 0 8px;
+  }
+
+  .party-value.muted {
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  /* ---------- reward item ---------- */
+  table.items {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 4px;
+    table-layout: fixed;
+  }
+
+  table.items col.col-product { width: 46%; }
+  table.items col.col-qty     { width: 18%; }
+  table.items col.col-points  { width: 18%; }
+  table.items col.col-total   { width: 18%; }
+
+  table.items thead th {
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #ffffff;
+    background: #1f2430;
+    padding: 8px 10px;
+    border: 1px solid #1f2430;
+  }
+
+  table.items thead th.num,
+  table.items tbody td.num {
+    text-align: right;
+  }
+
+  table.items tbody tr {
+    page-break-inside: avoid;
+  }
+
+  table.items tbody td {
+    padding: 8px 10px;
+    border: 1px solid #e5e7eb;
+    vertical-align: top;
+    word-wrap: break-word;
+  }
+
+  .product-subtitle {
+    display: block;
+    font-size: 10.5px;
+    color: #6b7280;
+    margin-top: 2px;
+  }
+
+  /* ---------- totals ---------- */
+  .totals-wrap {
+    display: table;
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 30px;
+  }
+
+  .totals-spacer {
+    display: table-cell;
+  }
+
+  .totals-box {
+    display: table-cell;
+    width: 260px;
+  }
+
+  .totals-box table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .totals-box td {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .totals-box tr.grand td {
+    border-top: 2px solid #1f2430;
+    font-size: 14px;
+    font-weight: 700;
+    padding-top: 10px;
+  }
+
+  .totals-box td.label {
+    color: #6b7280;
+  }
+
+  .totals-box td.value {
+    text-align: right;
+  }
+
+  /* ---------- fulfilment ---------- */
+  .fulfilment {
+    margin-bottom: 24px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .fulfilment .label {
+    color: #6b7280;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.4px;
+  }
+
+  /* ---------- footer ---------- */
+  .thanks {
+    text-align: center;
+    font-size: 13px;
+    font-style: italic;
+    color: #374151;
+    margin-bottom: 14px;
+  }
+
+  .footer {
+    font-size: 10px;
+    color: #9ca3af;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 10px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="brand">VIMAS</div>
+      <div class="brand-sub">Reward Mall{{#if company_address_line}}<br />{{company_address_line}}{{/if}}</div>
+    </div>
+    <div class="header-right">
+      <div class="doc-title">REWARD RECEIPT</div>
+      <table class="meta-table">
+        <tr>
+          <th>Invoice #</th>
+          <th>Date</th>
+        </tr>
+        <tr>
+          <td>{{invoice_id}}</td>
+          <td>{{redeemed_date}}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <div class="parties">
+    <div class="party-block">
+      <div class="party-label">Redeemed By</div>
+      <div class="party-value">
+        {{buyer_name}}
+      </div>
+    </div>
+    <div class="party-block">
+      <div class="party-label">Delivery Address</div>
+      {{#if has_delivery_address}}
+      <div class="party-value">
+        {{buyer_address}}<br />
+        {{buyer_phone}}<br />
+        {{buyer_email}}
+      </div>
+      {{else}}
+      <div class="party-value muted">No delivery address found.</div>
+      {{/if}}
+    </div>
+  </div>
+
+  <table class="items">
+    <colgroup>
+      <col class="col-product" />
+      <col class="col-qty" />
+      <col class="col-points" />
+      <col class="col-total" />
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Reward Item</th>
+        <th class="num">Qty</th>
+        <th class="num">Points / Unit</th>
+        <th class="num">Total Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          {{product_name}}
+          {{#if product_sub_title}}<span class="product-subtitle">{{product_sub_title}}</span>{{/if}}
+        </td>
+        <td class="num">{{quantity}}</td>
+        <td class="num">{{points_per_unit}}</td>
+        <td class="num">{{points_redeemed}}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="totals-wrap">
+    <div class="totals-spacer"></div>
+    <div class="totals-box">
+      <table>
+        <tr class="grand">
+          <td class="label">Total Points Redeemed</td>
+          <td class="value">{{points_redeemed}}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="fulfilment">
+    <div><span class="label">Status:</span> {{status_name}}</div>
+    {{#if tracking_number}}<div><span class="label">Tracking Number:</span> {{tracking_number}}</div>{{/if}}
+  </div>
+
+  <div class="thanks">Thank you for redeeming with Vimas Reward Mall!</div>
+
+  <div class="footer">
+    This is a computer-generated receipt for Invoice {{invoice_id}} and does not require a signature.<br />
+    {{#if company_support_email}}Questions? {{company_support_email}}{{/if}}
+  </div>
+
+</div>
+</body>
+</html>

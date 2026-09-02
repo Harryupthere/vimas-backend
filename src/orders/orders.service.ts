@@ -31,6 +31,8 @@ import {
 } from '../notifications/notification-names';
 import { CheckoutPricingService } from './checkout-pricing.service';
 import { VimasEWalletService } from '../vimas-e-wallet/vimas-e-wallet.service';
+import { ReceiptsService } from '../receipts/receipts.service';
+import { generateInvoiceId } from '../shared/utils/invoice-id.util';
 const PENDING_PAYMENT_STATUS_ID = 1;
 const PAID_PAYMENT_STATUS_ID = 2;
 const FAILED_PAYMENT_STATUS_ID = 3;
@@ -96,12 +98,33 @@ export class OrdersService {
     private readonly notificationsService: NotificationsService,
     private readonly checkoutPricingService: CheckoutPricingService,
     private readonly walletService: VimasEWalletService,
+    private readonly receiptsService: ReceiptsService,
   ) {}
 
   private isCoinPaymentsOptionName(name?: string | null): boolean {
     const normalized = (name ?? '').toLowerCase();
     return COINPAYMENTS_NAME_KEYWORDS.some((keyword) =>
       normalized.includes(keyword),
+    );
+  }
+
+  // orders.invoice_id carries no DB-level unique constraint (only an
+  // index), so a collision wouldn't be caught by the database itself —
+  // check-and-regenerate here instead. nanoid's keyspace at this length
+  // makes an actual collision astronomically unlikely; this is cheap
+  // insurance, not a load-bearing guarantee.
+  private async generateUniqueInvoiceId(
+    orderRepo: Repository<Order>,
+  ): Promise<string> {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const candidate = generateInvoiceId();
+      const clash = await orderRepo.findOne({
+        where: { invoiceId: candidate },
+      });
+      if (!clash) return candidate;
+    }
+    throw new InternalServerErrorException(
+      'Failed to generate a unique invoice id',
     );
   }
 
@@ -252,6 +275,23 @@ export class OrdersService {
 
         const saved = await orderRepo.save(orders);
 
+        // Every row from this checkout gets the same invoice_id — assigned
+        // here, keyed off the snapshot just created (order_snapshot_id is
+        // set on every row above, for all three payment paths), not
+        // payment_gateway_id: that column isn't written until later
+        // (createStripeCheckout/createCoinPaymentsCheckout, after this
+        // transaction commits) and never gets written at all for a
+        // wallet-only checkout (see the `totalPayableViaGateway <= 0`
+        // branch below).
+        const invoiceId = await this.generateUniqueInvoiceId(orderRepo);
+        await orderRepo.update(
+          { id: In(saved.map((o) => o.id)) },
+          { invoiceId },
+        );
+        saved.forEach((order) => {
+          order.invoiceId = invoiceId;
+        });
+
         if (pricing.wallet.usedAmount > 0) {
           await this.walletService.debitForCheckout(
             manager,
@@ -316,6 +356,7 @@ export class OrdersService {
         paymentCharges,
       );
     } catch (err) {
+      console.log(err);
       // Order + snapshot + wallet debit already committed above — since the
       // gateway step failed (createStripeCheckout/createCoinPaymentsCheckout
       // already deleted the orders themselves), also reverse the wallet
@@ -328,7 +369,7 @@ export class OrdersService {
           snapshotId,
         );
       }
-      await this.orderSnapshotRepo.delete({ id: snapshotId });
+      //await this.orderSnapshotRepo.delete({ id: snapshotId });
       throw err;
     }
   }
@@ -405,8 +446,8 @@ export class OrdersService {
         payment_intent_data: {
           metadata: { orderIds: orderIds.join(',') },
         },
-        success_url: `${appUrl}order-confirmation?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${appUrl}order-confirmation?checkout=cancel`,
+        success_url: `${appUrl}dashboard/confirm?checkout=success&checkout_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${appUrl}/dashboard/failed?checkout_id={CHECKOUT_SESSION_ID}`,
       });
     } catch (err) {
       await this.orderRepo.delete({ id: In(orderIds) });
@@ -507,8 +548,8 @@ export class OrdersService {
         breakdown: { subtotal: finalAmount },
         total: finalAmount,
       },
-      successUrl: `${appUrl}order-confirmation?checkout=success&session_id=${invoiceId}`,
-      cancelUrl: `${appUrl}order-confirmation?checkout=cancel`,
+      successUrl: `${appUrl}dashboard/confirm?checkout=success&checkout_id=${invoiceId}`,
+      cancelUrl: `${appUrl}dashboard/failed?checkout=cancel&checkout_id=${invoiceId}`,
       webhooks: [
         {
           notificationsUrl: webhookUrl,
@@ -557,7 +598,7 @@ export class OrdersService {
     console.log('===================== WEBHOOK =============');
 
     const event = this.stripeService.constructEvent(rawBody, signature);
-    console.log(event.type);
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
@@ -881,7 +922,7 @@ export class OrdersService {
   // touches a payment gateway, so it finalizes immediately instead of
   // waiting for a webhook). Callers are responsible for having already set
   // paymentStatusId/orderStatusId — this only does cart-clear/notify/
-  // point-queue.
+  // point-queue/receipt-queue.
   private async finalizeOrdersAsPaid(orders: Order[]) {
     const jobs: PointDistributionPurchaseQueue[] = [];
     for (const order of orders) {
@@ -905,6 +946,10 @@ export class OrdersService {
       // Partner-available products never distribute points — skip
       // queuing this order for the points worker entirely.
       if (order.product?.partnerAvailable === 1) {
+        console.log(
+          'Partner available so no points distribution for order id: ',
+          order.id,
+        );
         continue;
       }
 
@@ -938,6 +983,38 @@ export class OrdersService {
           removeOnFail: false,
         },
       );
+    }
+
+    // Kick off receipt generation right after points distribution is
+    // queued — one invoice_id per checkout, so de-dupe before starting
+    // (orders passed in here normally all share one invoice_id already,
+    // this just guards the general case). This writes the receipts row as
+    // 'pending' and enqueues the "generate-receipt" job; the buyer can
+    // already see it's in progress via GET /orders/my or the receipt
+    // endpoints without having to request generation themselves.
+    const invoiceIds = [
+      ...new Set(
+        orders
+          .map((order) => order.invoiceId)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+    for (const invoiceId of invoiceIds) {
+      try {
+        await this.receiptsService.ensureGenerationStarted(invoiceId);
+      } catch (err) {
+        // best-effort, same as the notification call above — a failure to
+        // start receipt generation must never block payment reconciliation.
+        // Notably, this call sits inside checkout()'s wallet-only path
+        // too, wrapped in a try/catch that refunds the wallet and deletes
+        // the order snapshot on any thrown error — rethrowing here would
+        // incorrectly unwind an order that was actually paid successfully.
+        this.logger.error(
+          `Failed to start receipt generation for invoice ${invoiceId}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+      }
     }
   }
 
@@ -977,9 +1054,30 @@ export class OrdersService {
 
     const [data, total] = await query.getManyAndCount();
 
+    // Step 6: attach a `receipt` field per invoice group. `not_created`
+    // means no receipts row exists yet for that invoice_id, distinct from
+    // `pending` (a generate-receipt job is in flight) — the frontend uses
+    // this alone to decide download/generate/processing/retry, so it must
+    // stay accurate. Rows predating the invoice_id migration have no
+    // invoice_id at all, and get `receipt: null` rather than a status.
+    const invoiceIds = [
+      ...new Set(
+        data.map((order) => order.invoiceId).filter((id): id is string => !!id),
+      ),
+    ];
+    const statusByInvoiceId =
+      await this.receiptsService.getStatusesForInvoiceIds(invoiceIds);
+
+    const orders = data.map((order) => ({
+      ...order,
+      receipt: order.invoiceId
+        ? { status: statusByInvoiceId.get(order.invoiceId) ?? 'not_created' }
+        : null,
+    }));
+
     return {
       data: {
-        orders: data,
+        orders,
         page,
         limit,
         total,

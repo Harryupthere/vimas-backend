@@ -26,6 +26,7 @@ import { ProductAddOnsModule } from '../product-add-ons/product-add-ons.module';
 import { ProductCouponsModule } from '../product-coupons/product-coupons.module';
 import { ProductDiscountsModule } from '../product-discounts/product-discounts.module';
 import { VimasEWalletModule } from '../vimas-e-wallet/vimas-e-wallet.module';
+import { ReceiptsModule } from '../receipts/receipts.module';
 
 @Module({
   imports: [
@@ -53,6 +54,11 @@ import { VimasEWalletModule } from '../vimas-e-wallet/vimas-e-wallet.module';
     ProductCouponsModule,
     ProductDiscountsModule,
     VimasEWalletModule,
+    // Only used for ReceiptsService.getStatusesForInvoiceIds, to attach the
+    // `receipt` field on findMyOrders (Step 6) — OrdersService never
+    // enqueues receipt generation itself, that's user-triggered via the
+    // receipts module's own controller.
+    ReceiptsModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your_jwt_secret',

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Invoice VIMAS#12osdjk (Preview)</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2430; font-size: 12px; margin: 0; }
+  .sheet { max-width: 780px; margin: 0 auto; }
+  .header { display: table; width: 100%; margin-bottom: 18px; }
+  .header-left, .header-right { display: table-cell; vertical-align: top; }
+  .header-right { text-align: right; }
+  .brand { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
+  .brand-sub { font-size: 11px; color: #6b7280; margin-top: 3px; line-height: 1.5; }
+  .doc-title { font-size: 26px; font-weight: 700; color: #9ca3af; letter-spacing: 1px; }
+  .meta-table { margin-top: 10px; margin-left: auto; border-collapse: collapse; }
+  .meta-table th, .meta-table td { border: 1px solid #d1d5db; padding: 5px 10px; font-size: 10.5px; }
+  .meta-table th { background: #f3f4f6; text-transform: uppercase; letter-spacing: 0.4px; color: #6b7280; font-weight: 600; text-align: left; }
+  hr.divider { border: none; border-top: 2px solid #1f2430; margin: 0 0 20px 0; }
+  .parties { display: table; width: 100%; margin-bottom: 22px; }
+  .party-block { display: table-cell; width: 50%; vertical-align: top; padding-right: 16px; }
+  .party-label { background: #f3f4f6; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #374151; font-weight: 700; padding: 5px 8px; margin-bottom: 6px; }
+  .party-value { font-size: 12px; line-height: 1.6; padding: 0 8px; }
+  table.items { width: 100%; border-collapse: collapse; margin-bottom: 4px; table-layout: fixed; }
+  table.items col.col-product { width: 46%; }
+  table.items col.col-qty { width: 14%; }
+  table.items col.col-price { width: 20%; }
+  table.items col.col-total { width: 20%; }
+  table.items thead th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; color: #ffffff; background: #1f2430; padding: 8px 10px; border: 1px solid #1f2430; }
+  table.items thead th.num, table.items tbody td.num { text-align: right; }
+  table.items tbody tr { page-break-inside: avoid; }
+  table.items tbody tr:nth-child(even) { background: #f9fafb; }
+  table.items tbody td { padding: 8px 10px; border: 1px solid #e5e7eb; vertical-align: top; word-wrap: break-word; }
+  .totals-wrap { display: table; width: 100%; margin-top: 10px; margin-bottom: 30px; }
+  .totals-spacer { display: table-cell; }
+  .totals-box { display: table-cell; width: 260px; }
+  .totals-box table { width: 100%; border-collapse: collapse; }
+  .totals-box td { padding: 6px 10px; font-size: 12px; }
+  .totals-box tr.grand td { border-top: 2px solid #1f2430; font-size: 14px; font-weight: 700; padding-top: 10px; }
+  .totals-box td.label { color: #6b7280; }
+  .totals-box td.value { text-align: right; }
+  .thanks { text-align: center; font-size: 13px; font-style: italic; color: #374151; margin-bottom: 14px; }
+  .footer { font-size: 10px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 10px; text-align: center; }
+  .note { max-width: 780px; margin: 0 auto 16px auto; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 11px; padding: 8px 12px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="note">This is a PREVIEW file only — with sample data already filled in, just so you can see the real design in a browser. Your backend will never generate this exact file; it fills receipt-template.html with real data at PDF-generation time.</div>
+<div class="sheet">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="brand">VIMAS</div>
+      <div class="brand-sub">42 Commerce Street, Bengaluru, KA 560001</div>
+    </div>
+    <div class="header-right">
+      <div class="doc-title">INVOICE</div>
+      <table class="meta-table">
+        <tr><th>Invoice #</th><th>Date</th></tr>
+        <tr><td>VIMAS#12osdjk</td><td>02 Sep 2026</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <div class="parties">
+    <div class="party-block">
+      <div class="party-label">Bill To</div>
+      <div class="party-value">
+        Harsh Chouhan<br />
+        221 Residency Road, Indore, MP 452001<br />
+        +91 98765 43210<br />
+        harsh.chouhan010@gmail.com
+      </div>
+    </div>
+    <div class="party-block">
+      <div class="party-label">Payment</div>
+      <div class="party-value">
+        Payment ID: pay_MkT9xYzAB123<br />
+        Method: UPI<br />
+        Status: Success
+      </div>
+    </div>
+  </div>
+
+  <table class="items">
+    <colgroup>
+      <col class="col-product" /><col class="col-qty" /><col class="col-price" /><col class="col-total" />
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Product</th><th class="num">Qty</th><th class="num">Unit Price</th><th class="num">Line Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Wireless Mechanical Keyboard</td><td class="num">1</td><td class="num">3,499.00</td><td class="num">3,499.00</td></tr>
+      <tr><td>USB-C Fast Charging Cable (2m)</td><td class="num">3</td><td class="num">299.00</td><td class="num">897.00</td></tr>
+      <tr><td>Ergonomic Wrist Rest</td><td class="num">2</td><td class="num">599.00</td><td class="num">1,198.00</td></tr>
+      <tr><td>27" 2K Monitor Stand (Adjustable, Aluminium)</td><td class="num">1</td><td class="num">2,150.00</td><td class="num">2,150.00</td></tr>
+    </tbody>
+  </table>
+
+  <div class="totals-wrap">
+    <div class="totals-spacer"></div>
+    <div class="totals-box">
+      <table>
+        <tr><td class="label">Subtotal</td><td class="value">7,744.00</td></tr>
+        <tr class="grand"><td class="label">Total Paid</td><td class="value">7,744.00</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="thanks">Thank you for shopping with Vimas!</div>
+
+  <div class="footer">
+    This is a computer-generated receipt for Invoice VIMAS#12osdjk and does not require a signature.<br />
+    Questions? support@vimas.com
+  </div>
+
+</div>
+</body>
+</html>
