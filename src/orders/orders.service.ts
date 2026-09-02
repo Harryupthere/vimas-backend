@@ -945,7 +945,7 @@ export class OrdersService {
 
       // Partner-available products never distribute points — skip
       // queuing this order for the points worker entirely.
-      if (order.product?.partnerAvailable === 1) {
+      if (order.productType == "partner") {
         console.log(
           'Partner available so no points distribution for order id: ',
           order.id,
