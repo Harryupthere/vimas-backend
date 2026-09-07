@@ -45,6 +45,8 @@ export interface CheckoutPricingItem {
     calculationType: ChargeCalculationType;
     percentage: number;
     calculatedAmount: number;
+    waiveAtQuantity: number | null;
+    waived: boolean;
   }>;
   addOns: Array<{
     id: number;
@@ -200,6 +202,8 @@ export class CheckoutPricingService {
           calculationType: charge.calculationType,
           percentage: Number(charge.percentage),
           calculatedAmount,
+          waiveAtQuantity: charge.waiveAtQuantity ?? null,
+          waived,
         };
       });
       const extraChargesTotal = round2(
@@ -478,6 +482,8 @@ export class CheckoutPricingService {
           percentage: c.percentage,
           amount: c.calculatedAmount,
           calculated_amount: c.calculatedAmount,
+          waive_at_quantity: c.waiveAtQuantity,
+          waived: c.waived,
         })),
       ),
       add_ons: items.flatMap((i) =>

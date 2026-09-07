@@ -1069,6 +1069,7 @@ export class OrdersService {
       .leftJoinAndSelect('order.product', 'product')
       .leftJoinAndSelect('order.orderStatus', 'orderStatus')
       .leftJoinAndSelect('order.paymentStatus', 'paymentStatus')
+      .leftJoinAndSelect('order.buyerContactDetails', 'buyerContactDetails')
       .where('order.buyer_id = :buyerId', { buyerId })
       .orderBy('order.id', 'DESC')
       .skip((page - 1) * limit)
@@ -1153,6 +1154,7 @@ export class OrdersService {
       .leftJoinAndSelect('order.buyer', 'buyer')
       .leftJoinAndSelect('order.orderStatus', 'orderStatus')
       .leftJoinAndSelect('order.paymentStatus', 'paymentStatus')
+      .leftJoinAndSelect('order.buyerContactDetails', 'buyerContactDetails')
       .orderBy('order.id', 'DESC')
       .skip((page - 1) * limit)
       .take(limit);

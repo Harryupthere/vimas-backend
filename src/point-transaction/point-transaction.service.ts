@@ -241,14 +241,12 @@ export class PointTransactionService {
     const transactions = await this.pointTransactionRepo.find({
       where: {
         orderId,
+        // Only distributions credited to the buyer or their upline — pool
+        // (and admin) wallet entries aren't user-facing, so drop them here
+        // rather than fetching pool relations just to filter/strip them below.
+        walletType: PointWalletType.USER,
       },
-      relations: [
-        'receiverUser',
-        'receiverAdmin',
-        'pointDistribution',
-        'pool',
-        'pool.poolDetail', // Change this if your relation name is different
-      ],
+      relations: ['receiverUser', 'pointDistribution'],
       order: {
         id: 'ASC',
       },
@@ -282,46 +280,14 @@ export class PointTransactionService {
               }
             : null,
 
-          user:
-            transaction.walletType === PointWalletType.USER &&
-            transaction.receiverUser
-              ? {
-                  id: transaction.receiverUser.id,
-                  uniqueId: transaction.receiverUser.unique_user_id,
-                  firstName: transaction.receiverUser.first_name,
-                  lastName: transaction.receiverUser.last_name,
-                }
-              : null,
-
-          admin:
-            transaction.walletType === PointWalletType.ADMIN &&
-            transaction.receiverAdmin
-              ? {
-                  type: 'ADMIN',
-                }
-              : null,
-
-          pool:
-            transaction.walletType === PointWalletType.POOL && transaction.pool
-              ? {
-                  id: transaction.pool.id,
-
-                  detail: transaction.pool.poolDetail
-                    ? {
-                        id: transaction.pool.poolDetail.id,
-                        type: transaction.pool.poolDetail.type,
-                        name: transaction.pool.poolDetail.name,
-                        description: transaction.pool.poolDetail.description,
-                        symbol: transaction.pool.poolDetail.symbol,
-                        colour: transaction.pool.poolDetail.colour,
-                      }
-                    : null,
-
-                  balance: transaction.pool.currentBalance,
-                  totalCredit: transaction.pool.totalCredit,
-                  totalDebit: transaction.pool.totalDebit,
-                }
-              : null,
+          user: transaction.receiverUser
+            ? {
+                id: transaction.receiverUser.id,
+                uniqueId: transaction.receiverUser.unique_user_id,
+                firstName: transaction.receiverUser.first_name,
+                lastName: transaction.receiverUser.last_name,
+              }
+            : null,
         })),
       },
       message: 'Transaction details fetched successfully',
