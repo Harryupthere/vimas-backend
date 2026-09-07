@@ -331,8 +331,24 @@ export class OrdersService {
         });
         await this.finalizeOrdersAsPaid(ordersWithProduct);
 
+        // Wallet-only order never touches a payment gateway, so there's no
+        // gateway checkout page to send the buyer to — instead point the
+        // frontend straight at the app's own confirm page, keyed by this
+        // checkout's invoice id (same query params the gateway success_urls
+        // use elsewhere, minus the gateway session id).
+        const invoiceId = savedOrders[0]?.invoiceId ?? null;
+        const appUrl = process.env.APP_URL || '';
+        const checkoutUrl = invoiceId
+          ? `${appUrl}dashboard/confirm?checkout=success&checkout_id=${invoiceId}`
+          : null;
+
         return {
-          data: { checkoutUrl: null, sessionId: null, paidByWallet: true },
+          data: {
+            checkoutUrl,
+            sessionId: null,
+            paidByWallet: true,
+            invoiceId,
+          },
           message: 'Order paid in full using your wallet balance',
         };
       }
@@ -1019,10 +1035,23 @@ export class OrdersService {
   }
 
   async getStatusBySessionId(buyerId: number, sessionId: string) {
-    const orders = await this.orderRepo.find({
+    let orders = await this.orderRepo.find({
       where: { paymentGatewayId: sessionId, buyerId },
       relations: ['orderStatus', 'paymentStatus', 'product'],
     });
+
+    // No gateway session matched — this happens for a wallet-only checkout,
+    // where paymentGatewayId is never written (see checkout()'s
+    // `totalPayableViaGateway <= 0` branch), so the confirm page's
+    // checkout_id is the invoiceId instead. Fall back to that before
+    // giving up.
+    if (!orders.length) {
+      orders = await this.orderRepo.find({
+        where: { invoiceId: sessionId, buyerId },
+        relations: ['orderStatus', 'paymentStatus', 'product'],
+      });
+    }
+
     if (!orders.length) {
       throw new NotFoundException('No orders found for this session');
     }
