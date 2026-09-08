@@ -189,6 +189,9 @@ export class DashboardService {
         .andWhere('pt.transaction_type = :transactionType', {
           transactionType: PointTransactionType.CREDIT,
         })
+        .andWhere('pt.wallet_type = :walletType', {
+          walletType: PointWalletType.USER,
+        })
         .andWhere('pt.created_at >= :monthStart', { monthStart })
         .andWhere('pt.created_at < :nextMonthStart', { nextMonthStart })
         .getRawOne(),
@@ -200,6 +203,9 @@ export class DashboardService {
         .where('pt.wallet_id = :walletId', { walletId: wallet.id })
         .andWhere('pt.transaction_type = :transactionType', {
           transactionType: PointTransactionType.DEBIT,
+        })
+        .andWhere('pt.wallet_type = :walletType', {
+          walletType: PointWalletType.USER,
         })
         .andWhere('pt.created_at >= :monthStart', { monthStart })
         .andWhere('pt.created_at < :nextMonthStart', { nextMonthStart })
@@ -213,6 +219,9 @@ export class DashboardService {
         .andWhere('pt.transaction_type = :transactionType', {
           transactionType: PointTransactionType.CREDIT,
         })
+        .andWhere('pt.wallet_type = :walletType', {
+          walletType: PointWalletType.USER,
+        })
         .andWhere('pt.created_at >= :weekStart', { weekStart })
         .andWhere('pt.created_at < :nextWeekStart', { nextWeekStart })
         .getRawOne(),
@@ -224,6 +233,9 @@ export class DashboardService {
         .where('pt.wallet_id = :walletId', { walletId: wallet.id })
         .andWhere('pt.transaction_type = :transactionType', {
           transactionType: PointTransactionType.DEBIT,
+        })
+        .andWhere('pt.wallet_type = :walletType', {
+          walletType: PointWalletType.USER,
         })
         .andWhere('pt.created_at >= :weekStart', { weekStart })
         .andWhere('pt.created_at < :nextWeekStart', { nextWeekStart })
