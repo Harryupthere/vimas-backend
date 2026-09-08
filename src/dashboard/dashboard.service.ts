@@ -108,6 +108,9 @@ export class DashboardService {
         .andWhere('pt.transaction_type = :transactionType', {
           transactionType: PointTransactionType.CREDIT,
         })
+        .andWhere('pt.wallet_type = :walletType', {
+          walletType: PointWalletType.USER,
+        })
         .andWhere('pt.created_at >= :windowStart', { windowStart })
         .groupBy("DATE_FORMAT(pt.created_at, '%Y-%m')")
         .getRawMany<{ month: string; total: string }>(),
