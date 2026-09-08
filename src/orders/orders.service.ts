@@ -486,7 +486,7 @@ export class OrdersService {
     );
 
     return {
-      data: { checkoutUrl: session.url, sessionId: session.id },
+      data: { checkoutUrl: session.url, sessionId: session.id,paidByWallet:false },
       message: 'Checkout session created successfully',
     };
   }
