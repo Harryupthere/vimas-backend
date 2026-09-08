@@ -17,6 +17,7 @@ export class CreateContactInfoDto {
   @IsOptional()
   address2?: string;
 
+   @IsOptional()
   @IsString()
   @IsNotEmpty()
   landmark: string;
