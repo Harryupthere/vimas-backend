@@ -17,6 +17,9 @@ export class CreateProductExtraChargeDto {
   @IsInt()
   productId: number;
 
+  @IsInt()
+  paymentOptionId: number;
+
   @IsString()
   @IsNotEmpty()
   name: string;

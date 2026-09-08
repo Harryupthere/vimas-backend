@@ -994,7 +994,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/product-extra-charges/product/:productId?productType=CONSUMER",
+              "raw": "{{base_url}}/product-extra-charges/product/:productId?productType=CONSUMER&paymentOptionId=",
               "host": [
                 "{{base_url}}"
               ],
@@ -1008,6 +1008,11 @@
                   "key": "productType",
                   "value": "CONSUMER",
                   "description": "Required \u2014 CONSUMER, RESELLER or PARTNER, matching the cart item's product type"
+                },
+                {
+                  "key": "paymentOptionId",
+                  "value": "",
+                  "description": "Optional \u2014 narrow to the payment option the buyer has selected"
                 }
               ]
             },
@@ -1591,7 +1596,7 @@
                 "checkout"
               ]
             },
-            "description": "Creates one pending order per cart item and returns a Stripe Checkout URL. Redirect the buyer to data.checkoutUrl. If the selected payment option has a non-zero `charges` value, it's added as a separate \"Payment processing fee\" line item on top of the cart subtotal.",
+            "description": "Creates one pending order per cart item and returns a Stripe Checkout URL. Redirect the buyer to data.checkoutUrl. If the selected payment option has a non-zero `charges` value, it's added as a separate \"Payment processing fee\" line item on top of the cart subtotal. Each product's own extra charges (see Product Extra Charges) are now scoped to paymentOptionId as well — only the charges the admin configured for this exact product + payment option pairing are applied; a product with none configured for it is charged nothing extra.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -1703,7 +1708,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/orders/checkout/pricing?couponCodes=SAVE10,PARTNER5&addOnIds=1,2&useWallet=true",
+              "raw": "{{base_url}}/orders/checkout/pricing?couponCodes=SAVE10,PARTNER5&addOnIds=1,2&useWallet=true&paymentOptionId=1",
               "host": [
                 "{{base_url}}"
               ],
@@ -1727,6 +1732,11 @@
                   "key": "useWallet",
                   "value": "true",
                   "description": "Optional \u2014 true to preview with the wallet balance applied"
+                },
+                {
+                  "key": "paymentOptionId",
+                  "value": "1",
+                  "description": "Optional \u2014 payment_options id to preview against; extra charges are now configured per product+payment option (see ProductExtraCharge), so this determines which extra charges apply. Omit to preview against payment option 1 (the same default checkout uses)."
                 }
               ]
             },
@@ -1740,7 +1750,7 @@
                 }
               ]
             },
-            "description": "Read-only checkout-page preview: applicable extra charges, eligible add-ons, automatic discounts, coupons (one per product, if provided) and wallet info (only if the wallet is active), all calculated server-side from the current cart \u2014 no order or order_snapshot is created. The response's items array breaks everything down per product (and per product type, for a mixed consumer/partner/reseller cart), so the frontend can render a per-product breakdown directly."
+            "description": "Read-only checkout-page preview: applicable extra charges (scoped to paymentOptionId), eligible add-ons, automatic discounts, coupons (one per product, if provided) and wallet info (only if the wallet is active), all calculated server-side from the current cart \u2014 no order or order_snapshot is created. The response's items array breaks everything down per product (and per product type, for a mixed consumer/partner/reseller cart), so the frontend can render a per-product breakdown directly."
           }
         },
         {

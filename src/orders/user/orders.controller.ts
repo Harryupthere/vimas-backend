@@ -34,6 +34,7 @@ export class OrdersController {
     @Query('couponCodes') couponCodes?: string,
     @Query('addOnIds') addOnIds?: string,
     @Query('useWallet') useWallet?: string,
+    @Query('paymentOptionId') paymentOptionId?: string,
   ) {
     return this.ordersService.previewCheckoutPricing(req.user.id, {
       couponCodes: couponCodes
@@ -49,6 +50,7 @@ export class OrdersController {
             .filter((id) => !Number.isNaN(id))
         : undefined,
       useWallet: useWallet === 'true',
+      paymentOptionId: paymentOptionId ? +paymentOptionId : undefined,
     });
   }
 

@@ -1214,14 +1214,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"productId\": 1,\n  \"name\": \"Processing Fee\",\n  \"description\": \"Payment processing charge\",\n  \"symbol\": \"PROCESSING\",\n  \"productType\": \"CONSUMER\",\n  \"calculationBasis\": \"PRODUCT\",\n  \"calculationType\": \"PERCENTAGE\",\n  \"percentage\": 5,\n  \"fixedAmount\": 1,\n  \"fixedAmountBasis\": \"PRODUCT\",\n  \"isActive\": 1\n}",
+              "raw": "{\n  \"productId\": 1,\n  \"paymentOptionId\": 1,\n  \"name\": \"Processing Fee\",\n  \"description\": \"Payment processing charge\",\n  \"symbol\": \"PROCESSING\",\n  \"productType\": \"CONSUMER\",\n  \"calculationBasis\": \"PRODUCT\",\n  \"calculationType\": \"PERCENTAGE\",\n  \"percentage\": 5,\n  \"fixedAmount\": 1,\n  \"fixedAmountBasis\": \"PRODUCT\",\n  \"isActive\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "description": "Admin-configured additional charge for a product + product type (e.g. shipping, processing fee, platform fee). calculationType PERCENTAGE/AMOUNT controls the primary charge; fixedAmount/fixedAmountBasis adds a flat top-up (e.g. \"5% + 1 MYR\"). calculationBasis/fixedAmountBasis (QUANTITY|PRODUCT) controls whether that part is multiplied by quantity or applied once per line. waiveAtQuantity, if set, zeroes the charge once quantity reaches that value. The backend always recalculates this at checkout \u2014 the frontend never sends amounts."
+            "description": "Admin-configured additional charge for a product + product type + payment option (e.g. shipping, processing fee, platform fee). calculationType PERCENTAGE/AMOUNT controls the primary charge; fixedAmount/fixedAmountBasis adds a flat top-up (e.g. \"5% + 1 MYR\"). calculationBasis/fixedAmountBasis (QUANTITY|PRODUCT) controls whether that part is multiplied by quantity or applied once per line. waiveAtQuantity, if set, zeroes the charge once quantity reaches that value. The backend always recalculates this at checkout \u2014 the frontend never sends amounts."
           }
         },
         {
@@ -1230,7 +1230,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/product-extra-charges?productId=1&productType=CONSUMER&isActive=1&search=",
+              "raw": "{{base_url}}/admin/product-extra-charges?productId=1&productType=CONSUMER&paymentOptionId=1&isActive=1&search=",
               "host": [
                 "{{base_url}}"
               ],
@@ -1247,6 +1247,11 @@
                 {
                   "key": "productType",
                   "value": "CONSUMER",
+                  "disabled": false
+                },
+                {
+                  "key": "paymentOptionId",
+                  "value": "1",
                   "disabled": false
                 },
                 {

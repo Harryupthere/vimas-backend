@@ -29,6 +29,14 @@ export interface CheckoutPricingOptions {
   // same product in one checkout.
   couponCodes?: string[];
   useWallet?: boolean;
+  // The payment option the buyer has selected (or will be charged
+  // through) for this checkout. Extra charges are now configured per
+  // product+payment option (see ProductExtraCharge), so this narrows
+  // findApplicable to exactly the charges the admin set up for that
+  // combination — a product with no extra charges row for this payment
+  // option simply returns none, rather than falling back to charges
+  // meant for a different payment option.
+  paymentOptionId?: number;
 }
 
 export interface CheckoutPricingItem {
@@ -173,9 +181,14 @@ export class CheckoutPricingService {
       const subtotal = round2(unitPrice * quantity);
 
       // --- extra charges ---
+      // Scoped to the buyer's selected payment option — a charge row only
+      // applies if the admin configured it for this exact product +
+      // payment option pairing (see ProductExtraCharge). No matching row
+      // means no extra charges for this item, full stop.
       const applicableCharges = await this.extraChargesService.findApplicable(
         cartItem.product.id,
         productType,
+        options.paymentOptionId,
       );
       const extraCharges = applicableCharges.map((charge) => {
         const waived =

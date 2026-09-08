@@ -36,6 +36,18 @@ export class ProductPaymentOptionService {
       where: { product_id: id },
       relations: ['paymentOption'],
     });
+    console.log('paymentOption', paymentOption);
+    if (!paymentOption)
+      throw new NotFoundException('Product Payment Option not found');
+    return { data: paymentOption, message: 'Payment options' };
+  }
+
+    async findAll(id: number): Promise<any> {
+    const paymentOption = await this.paymentOptionRepo.find({
+      where: { product_id: id },
+      relations: ['paymentOption'],
+    });
+    console.log('paymentOption', paymentOption);
     if (!paymentOption)
       throw new NotFoundException('Product Payment Option not found');
     return { data: paymentOption, message: 'Payment options' };

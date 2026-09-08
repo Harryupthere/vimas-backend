@@ -232,6 +232,7 @@ export class OrdersService {
         addOnIds: dto.addOnIds,
         couponCodes: dto.couponCodes,
         useWallet: dto.useWallet,
+        paymentOptionId,
       },
     );
     const pricingByCartItemId = new Map(
@@ -400,15 +401,21 @@ export class OrdersService {
       addOnIds?: number[];
       couponCodes?: string[];
       useWallet?: boolean;
+      paymentOptionId?: number;
     },
   ) {
     const cartItems = await this.cartRepo.find({
       where: { buyer: { id: buyerId } },
     });
+    // Default to payment option 1, same as checkout() itself, so the
+    // preview reflects the same extra charges the buyer would actually be
+    // charged if they checked out right now without picking a payment
+    // option explicitly.
+    const paymentOptionId = options.paymentOptionId ?? 1;
     const pricing = await this.checkoutPricingService.calculate(
       buyerId,
       cartItems,
-      options,
+      { ...options, paymentOptionId },
     );
     return {
       data: pricing,

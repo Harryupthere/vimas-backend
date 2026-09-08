@@ -35,12 +35,14 @@ export class ProductExtraChargesAdminController {
   findAll(
     @Query('productId') productId?: string,
     @Query('productType') productType?: ProductType,
+    @Query('paymentOptionId') paymentOptionId?: string,
     @Query('isActive') isActive?: string,
     @Query('search') search?: string,
   ) {
     return this.productExtraChargesService.findAll(
       productId ? +productId : undefined,
       productType,
+      paymentOptionId ? +paymentOptionId : undefined,
       isActive !== undefined ? +isActive : undefined,
       search,
     );

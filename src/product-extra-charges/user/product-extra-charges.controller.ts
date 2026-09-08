@@ -20,11 +20,13 @@ export class ProductExtraChargesUserController {
 
   // Buyer: extra charges applicable to a product, scoped to the cart item's
   // product type — shown on the checkout page so the buyer can see these
-  // auto-applied charges (e.g. processing fee) before paying.
+  // auto-applied charges (e.g. processing fee) before paying. Optionally
+  // narrowed to the payment option the buyer has selected.
   @Get('product/:productId')
   findAvailableForProduct(
     @Param('productId', ParseIntPipe) productId: number,
     @Query('productType') productType?: ProductType,
+    @Query('paymentOptionId') paymentOptionId?: string,
   ) {
     if (!productType || !Object.values(ProductType).includes(productType)) {
       throw new BadRequestException(
@@ -34,6 +36,7 @@ export class ProductExtraChargesUserController {
     return this.productExtraChargesService.findAvailableForProduct(
       productId,
       productType,
+      paymentOptionId ? +paymentOptionId : undefined,
     );
   }
 }

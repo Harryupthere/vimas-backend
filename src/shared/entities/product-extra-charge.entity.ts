@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Product } from './products.entity';
+import { PaymentOption } from './payment-option.entity';
 import { ProductType } from '../enums/product-type.enum';
 
 export enum ChargeCalculationBasis {
@@ -37,6 +38,17 @@ export class ProductExtraCharge {
   })
   @JoinColumn({ name: 'product_id' })
   product: Product;
+
+  // The payment method this extra charge applies to (e.g. COD surcharge,
+  // online-payment processing fee). Not unique — a product+payment option
+  // may have several charges (e.g. multiple fee line items), indexed via
+  // idx_product_payment_option for lookup.
+  @Column({ name: 'payment_option_id', type: 'bigint' })
+  paymentOptionId: number;
+
+  @ManyToOne(() => PaymentOption, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'payment_option_id' })
+  paymentOption: PaymentOption;
 
   @Column({ length: 100 })
   name: string;
