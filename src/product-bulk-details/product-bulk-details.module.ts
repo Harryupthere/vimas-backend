@@ -5,13 +5,14 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from '../shared/auth/strategies/jwt.strategy';
 import { ProductBulkDetail } from '../shared/entities/product-bulk-detail.entity';
 import { Product } from '../shared/entities/products.entity';
+import { PointDistribution } from '../shared/entities/point-distribution.entity';
 import { ProductBulkDetailsService } from './product-bulk-details.service';
 import { ProductBulkDetailsAdminController } from './admin/product-bulk-details.controller';
 import { ProductBulkDetailsUserController } from './user/product-bulk-details.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ProductBulkDetail, Product]),
+    TypeOrmModule.forFeature([ProductBulkDetail, Product, PointDistribution]),
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your_jwt_secret',
