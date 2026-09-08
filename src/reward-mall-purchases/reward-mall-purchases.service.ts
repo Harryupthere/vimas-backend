@@ -218,13 +218,24 @@ export class RewardMallPurchasesService {
     const statusByInvoiceId =
       await this.rewardMallReceiptsService.getStatusesForInvoiceIds(invoiceIds);
 
-    const purchases = data.map((purchase) => ({
-      ...purchase,
-      receipt: purchase.invoiceId
-        ? { status: statusByInvoiceId.get(purchase.invoiceId) ?? 'not_created' }
-        : null,
-    }));
-
+    // Only these purchase statuses count as "confirmed" — the frontend uses
+    // `display` alone to decide whether to show the generate/download
+    // receipt buttons at all, regardless of the underlying receipt status.
+    const CONFIRMED_PURCHASE_STATUS_IDS = [1, 2, 3, 4];
+    const purchases = data.map((purchase) => {
+      return {
+        ...purchase,
+        receipt: purchase.invoiceId
+          ? {
+              status:
+                statusByInvoiceId.get(purchase.invoiceId) ?? 'not_created',
+              display: CONFIRMED_PURCHASE_STATUS_IDS.includes(
+                Number(purchase.statusId),
+              ),
+            }
+          : null,
+      };
+    });
     return {
       data: {
         purchases,

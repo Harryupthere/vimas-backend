@@ -564,8 +564,10 @@ export class OrdersService {
         breakdown: { subtotal: finalAmount },
         total: finalAmount,
       },
-      successUrl: `${appUrl}dashboard/confirm?checkout=success&checkout_id=${invoiceId}`,
-      cancelUrl: `${appUrl}dashboard/failed?checkout=cancel&checkout_id=${invoiceId}`,
+      // successUrl: `${appUrl}dashboard/confirm?checkout=success&checkout_id=${invoiceId}`,
+      // cancelUrl: `${appUrl}dashboard/failed?checkout=cancel&checkout_id=${invoiceId}`,
+      successUrl: `https://vimasgv.com/dashboard/confirm?checkout=success&checkout_id=${invoiceId}`,
+       cancelUrl: `https://vimasgv.com/dashboard/failed?checkout=cancel&checkout_id=${invoiceId}`,
       webhooks: [
         {
           notificationsUrl: webhookUrl,
@@ -605,7 +607,7 @@ export class OrdersService {
     );
 
     return {
-      data: { checkoutUrl: invoice.checkoutLink, sessionId: invoice.id },
+      data: { checkoutUrl: invoice.checkoutLink, sessionId: invoice.id , paidByWallet: false},
       message: 'Checkout session created successfully',
     };
   }
@@ -1098,10 +1100,18 @@ export class OrdersService {
     const statusByInvoiceId =
       await this.receiptsService.getStatusesForInvoiceIds(invoiceIds);
 
+    // Only these order statuses count as "confirmed" — the frontend uses
+    // `display` alone to decide whether to show the generate/download
+    // receipt buttons at all, regardless of the underlying receipt status.
+    const CONFIRMED_ORDER_STATUS_IDS = [2, 3, 4];
+
     const orders = data.map((order) => ({
       ...order,
       receipt: order.invoiceId
-        ? { status: statusByInvoiceId.get(order.invoiceId) ?? 'not_created' }
+        ? {
+            status: statusByInvoiceId.get(order.invoiceId) ?? 'not_created',
+            display: CONFIRMED_ORDER_STATUS_IDS.includes(order.orderStatusId),
+          }
         : null,
     }));
 
