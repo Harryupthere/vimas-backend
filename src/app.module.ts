@@ -62,6 +62,7 @@ import { AdminRoleModule } from './admin-role/admin-role.module';
 import { RolePermissionModule } from './role-permission/role-permission.module';
 import { AuthModule } from './shared/auth/auth.module';
 import { AdminMenuModule } from './admin-menu/admin-menu.module';
+import { AdminMenuPermissionModule } from './admin-menu-permission/admin-menu-permission.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -149,6 +150,7 @@ import { AdminMenuModule } from './admin-menu/admin-menu.module';
     RolePermissionModule,
     AuthModule,
     AdminMenuModule,
+    AdminMenuPermissionModule,
     AdminModule
   ],
   controllers: [AppController],
