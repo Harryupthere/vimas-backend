@@ -14,6 +14,7 @@ import { RefreshTokenAdminDto } from './refresh-token.dto';
 import { Role } from '../shared/entities/role.entity';
 import { AdminRole } from '../shared/entities/admin-role.entity';
 import { CreateAdminDto } from './create-admin.dto';
+import { UpdateAdminDto } from './update-admin.dto';
 @Injectable()
 export class AdminService {
   constructor(
@@ -208,6 +209,112 @@ export class AdminService {
         },
       },
       message: 'Admin created successfully',
+    };
+  }
+
+  private async attachRole(admin: Admin) {
+    const adminRole = await this.adminRoleRepo.findOne({
+      where: { admin_id: admin.id },
+      relations: { role: true },
+    });
+
+    return {
+      id: admin.id,
+      username: admin.username,
+      role: adminRole?.role
+        ? {
+            id: adminRole.role.id,
+            name: adminRole.role.name,
+            slug: adminRole.role.slug,
+          }
+        : null,
+      created_at: admin.created_at,
+      updated_at: admin.updated_at,
+    };
+  }
+
+  async findAll(page = 1, limit = 10, search?: string): Promise<any> {
+    const query = this.adminRepo.createQueryBuilder('admin');
+
+    if (search) {
+      query.andWhere('admin.username ILIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    const [admins, total] = await query
+      .orderBy('admin.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const data = await Promise.all(
+      admins.map((admin) => this.attachRole(admin)),
+    );
+
+    return {
+      data,
+      meta: { total, page, limit },
+      message: 'Admins fetched successfully',
+    };
+  }
+
+  async findOne(id: number): Promise<any> {
+    const admin = await this.adminRepo.findOne({ where: { id } });
+    if (!admin) throw new NotFoundException('Admin not found');
+
+    return {
+      data: await this.attachRole(admin),
+      message: 'Admin fetched successfully',
+    };
+  }
+
+  async updateAdmin(id: number, dto: UpdateAdminDto): Promise<any> {
+    const admin = await this.adminRepo.findOne({ where: { id } });
+    if (!admin) throw new NotFoundException('Admin not found');
+
+    if (dto.username && dto.username !== admin.username) {
+      const existingAdmin = await this.adminRepo.findOne({
+        where: { username: dto.username },
+      });
+      if (existingAdmin) {
+        throw new UnauthorizedException(
+          'Admin with this username already exists',
+        );
+      }
+      admin.username = dto.username;
+    }
+
+    await this.adminRepo.save(admin);
+
+    if (dto.adminRoleId) {
+      const role = await this.roleRepo.findOne({
+        where: { id: dto.adminRoleId, is_active: true },
+      });
+      if (!role) {
+        throw new NotFoundException('Admin role not found or inactive');
+      }
+
+      const existingAdminRole = await this.adminRoleRepo.findOne({
+        where: { admin_id: admin.id },
+      });
+
+      if (existingAdminRole) {
+        existingAdminRole.role_id = role.id;
+        await this.adminRoleRepo.save(existingAdminRole);
+      } else {
+        await this.adminRoleRepo.save(
+          this.adminRoleRepo.create({
+            admin_id: admin.id,
+            role_id: role.id,
+          }),
+        );
+      }
+    }
+
+    return {
+      data: await this.attachRole(admin),
+      message: 'Admin updated successfully',
     };
   }
 }

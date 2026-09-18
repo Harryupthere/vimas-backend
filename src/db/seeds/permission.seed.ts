@@ -2,8 +2,21 @@ import 'dotenv/config';
 import { DataSource } from 'typeorm';
 
 import { Permission } from '../../shared/entities/permission.entity';
+import { Role } from '../../shared/entities/role.entity';
+import { RolePermission } from '../../shared/entities/role-permission.entity';
+import { AdminRole } from '../../shared/entities/admin-role.entity';
 import { extractPermissionsFromControllers, SeedPermission } from './extract-permissions';
 import { getManualPermissions } from './manual-permissions';
+
+const SUPER_ADMIN_ROLE = {
+  name: 'Super Admin',
+  slug: 'super-admin',
+  description: 'Handles whole admin panel',
+  is_active: true,
+  is_system: true,
+};
+
+const SUPER_ADMIN_ID = 1;
 
 async function run() {
   const dataSource = new DataSource({
@@ -50,6 +63,49 @@ async function run() {
     for (const permission of permissions) {
       console.log(`  - ${permission.slug}`);
     }
+
+    const seededPermissions = await permissionRepo.find();
+
+    const roleRepo = dataSource.getRepository(Role);
+    const rolePermissionRepo = dataSource.getRepository(RolePermission);
+    const adminRoleRepo = dataSource.getRepository(AdminRole);
+
+    let superAdminRole = await roleRepo.findOne({
+      where: { slug: SUPER_ADMIN_ROLE.slug },
+    });
+
+    if (superAdminRole) {
+      await roleRepo.update(superAdminRole.id, SUPER_ADMIN_ROLE);
+    } else {
+      superAdminRole = await roleRepo.save(roleRepo.create(SUPER_ADMIN_ROLE));
+    }
+
+    await rolePermissionRepo.delete({ role_id: superAdminRole.id });
+    await rolePermissionRepo.insert(
+      seededPermissions.map((permission) => ({
+        role_id: superAdminRole!.id,
+        permission_id: permission.id,
+      })),
+    );
+
+    console.log(
+      `Assigned all ${seededPermissions.length} permissions to "${SUPER_ADMIN_ROLE.name}" role.`,
+    );
+
+    const existingAdminRole = await adminRoleRepo.findOne({
+      where: { admin_id: SUPER_ADMIN_ID, role_id: superAdminRole.id },
+    });
+
+    if (!existingAdminRole) {
+      await adminRoleRepo.insert({
+        admin_id: SUPER_ADMIN_ID,
+        role_id: superAdminRole.id,
+      });
+    }
+
+    console.log(
+      `Assigned "${SUPER_ADMIN_ROLE.name}" role to admin id=${SUPER_ADMIN_ID}.`,
+    );
   } finally {
     await dataSource.destroy();
   }

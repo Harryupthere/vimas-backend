@@ -4,6 +4,7 @@ import { SeedPermission, slugToPermission } from './extract-permissions';
  * Permissions for controllers that don't (yet) carry `@Permission(...)`
  * decorators, so they can't be picked up by extractPermissionsFromControllers().
  *
+ * - dashboard.*   -> dashboard view-only access, not tied to a specific controller.
  * - roles.*       -> src/roles/role.controller.ts
  * - permissions.* -> src/permission/permission.controller.ts
  * - admins.*      -> shared by src/admin-role/admin-role.controller.ts and
@@ -11,6 +12,8 @@ import { SeedPermission, slugToPermission } from './extract-permissions';
  *                    which manage admin access and are gated by one admins permission.
  */
 const MANUAL_SLUGS = [
+  'dashboard.view',
+
   'roles.create',
   'roles.view',
   'roles.update',
