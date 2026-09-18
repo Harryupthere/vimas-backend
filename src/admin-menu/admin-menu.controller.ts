@@ -25,25 +25,25 @@ export class AdminMenuController {
   ) {}
 
   @Post()
-  @Permission("admin-menus.create")
+  @Permission("admins.create")
   create(@Body() dto: CreateAdminMenuDto) {
     return this.adminMenuService.create(dto);
   }
 
   @Get()
-  @Permission("admin-menus.view")
+  @Permission("admins.view")
   findAll() {
     return this.adminMenuService.findAll();
   }
 
   @Get("active")
-  @Permission("admin-menus.view")
+  @Permission("admins.view")
   findAllActive() {
     return this.adminMenuService.findAllActive();
   }
 
   @Get(":id")
-  @Permission("admin-menus.view")
+  @Permission("admins.view")
   findOne(
     @Param("id", ParseIntPipe) id: number,
   ) {
@@ -51,7 +51,7 @@ export class AdminMenuController {
   }
 
   @Patch(":id")
-  @Permission("admin-menus.update")
+  @Permission("admins.update")
   update(
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: UpdateAdminMenuDto,
@@ -60,7 +60,7 @@ export class AdminMenuController {
   }
 
   @Delete(":id")
-  @Permission("admin-menus.delete")
+  @Permission("admins.delete")
   remove(
     @Param("id", ParseIntPipe) id: number,
   ) {

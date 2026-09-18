@@ -1228,6 +1228,92 @@
             },
             "description": "Deletes an admin menu."
           }
+        },
+        {
+          "name": "Get Menu Permissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/menus/:menuId/permissions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "menus",
+                ":menuId",
+                "permissions"
+              ],
+              "variable": [
+                {
+                  "key": "menuId",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Lists the permissions currently assigned to an admin menu."
+          }
+        },
+        {
+          "name": "Update Menu Permissions",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/menus/:menuId/permissions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "menus",
+                ":menuId",
+                "permissions"
+              ],
+              "variable": [
+                {
+                  "key": "menuId",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissionIds\": [1, 2, 3]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Replaces the set of permissions assigned to an admin menu with the given permissionIds."
+          }
         }
       ]
     },
