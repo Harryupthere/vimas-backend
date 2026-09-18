@@ -118,7 +118,7 @@ import { AdminMenuModule } from './admin-menu/admin-menu.module';
     PaymentOptionModule,
     ProductPaymentOptionModule,
     CartModule,
-    AdminModule,
+    RoleModule,
     StripeModule,
     ContactInfoModule,
     OrderStatusModule,
@@ -144,12 +144,12 @@ import { AdminMenuModule } from './admin-menu/admin-menu.module';
     ProductDiscountsModule,
     VimasEWalletModule,
     SearchModule,
-    RoleModule,
     PermissionModule,
     AdminRoleModule,
     RolePermissionModule,
     AuthModule,
-    AdminMenuModule
+    AdminMenuModule,
+    AdminModule
   ],
   controllers: [AppController],
   providers: [AppService],
