@@ -215,6 +215,47 @@
       "name": "Admins",
       "item": [
         {
+          "name": "Create Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"new-admin@vimas.com\",\n  \"password\": \"StrongPass123\",\n  \"adminRoleId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Creates a new admin account under the given adminRoleId. Requires an authenticated admin token with the admins.create permission (req.user.id is recorded as the creator)."
+          }
+        },
+        {
           "name": "List Admins",
           "request": {
             "method": "GET",
