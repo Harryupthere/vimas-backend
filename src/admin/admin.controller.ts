@@ -43,21 +43,14 @@ export class AdminController {
     return this.adminService.changePassword(req.user.role, changePasswordDto);
   }
 
-
-    @UseGuards(JwtAuthGuard, PermissionGuard)
+  @UseGuards(JwtAuthGuard, PermissionGuard)
   @Permission('admins.create')
   @Post()
-createAdmin(
-  @Req() req,
-  @Body() dto: CreateAdminDto
-) {
-  return this.adminService.createAdmin(
-    req.user.id,
-    dto
-  );
-}
+  createAdmin(@Req() req, @Body() dto: CreateAdminDto) {
+    return this.adminService.createAdmin(req.user.id, dto);
+  }
 
-    @UseGuards(JwtAuthGuard, PermissionGuard)
+  @UseGuards(JwtAuthGuard, PermissionGuard)
   @Permission('admins.view')
   @Get()
   async findAll(
