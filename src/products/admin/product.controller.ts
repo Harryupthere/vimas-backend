@@ -15,8 +15,9 @@ import { UpdateProductDto } from '../dto/update-product.dto';
 import { JwtAuthGuard } from 'src/shared/auth/strategies/auth.guard';
 import { Roles } from 'src/shared/auth/roles.decorator';
 import { RolesGuard } from 'src/shared/auth/roles.guard';
-
-@UseGuards(JwtAuthGuard)
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
+@UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('admin')
 export class ProductsAdminController {
   constructor(private readonly productsService: ProductsService) {}
@@ -25,13 +26,14 @@ export class ProductsAdminController {
   // Scoped to admins only; every other route on this controller keeps its
   // existing JwtAuthGuard-only behavior.
   @Post('products')
-  @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Permission('products.create')
+  // @Roles('admin')
   create(@Body() dto: CreateProductDto) {
     return this.productsService.createByAdmin(dto);
   }
 
   @Get('products')
+  @Permission('products.view')
   findAll(
     @Query('page') pageStr: string = '1',
     @Query('limit') limitStr: string = '10',
@@ -43,16 +45,19 @@ export class ProductsAdminController {
   }
 
   @Get('products/:id')
+  @Permission('products.view')
   findOne(@Param('id') id: number) {
     return this.productsService.findOne(id);
   }
 
   @Patch('products/:id')
+  @Permission('products.update')
   update(@Param('id') id: number, @Body() dto: UpdateProductDto) {
     return this.productsService.update(id, dto);
   }
 
   @Delete('products/:id')
+  @Permission('products.delete')
   remove(@Param('id') id: number) {
     return this.productsService.remove(id);
   }

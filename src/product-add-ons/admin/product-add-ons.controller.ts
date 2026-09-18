@@ -17,19 +17,24 @@ import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 import { Roles } from '../../shared/auth/roles.decorator';
 import { RolesGuard } from '../../shared/auth/roles.guard';
 import { ProductType } from '../../shared/enums/product-type.enum';
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(JwtAuthGuard, PermissionGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('admin')
 @Controller('admin/product-add-ons')
 export class ProductAddOnsAdminController {
   constructor(private readonly productAddOnsService: ProductAddOnsService) {}
 
   @Post()
+  @Permission('product-add-ons.create')
   create(@Body() dto: CreateProductAddOnDto) {
     return this.productAddOnsService.create(dto);
   }
 
   @Get()
+  @Permission('product-add-ons.view')
   findAll(
     @Query('productId') productId?: string,
     @Query('productType') productType?: ProductType,
@@ -45,11 +50,13 @@ export class ProductAddOnsAdminController {
   }
 
   @Get(':id')
+  @Permission('product-add-ons.view')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.productAddOnsService.findOne(id);
   }
 
   @Patch(':id')
+  @Permission('product-add-ons.update')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductAddOnDto,
@@ -58,6 +65,7 @@ export class ProductAddOnsAdminController {
   }
 
   @Delete(':id')
+  @Permission('product-add-ons.delete')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.productAddOnsService.remove(id);
   }

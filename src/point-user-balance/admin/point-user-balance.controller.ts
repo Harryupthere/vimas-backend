@@ -16,9 +16,12 @@ import { UpdatePointUserBalanceDto } from '../dto/update-point-user-balance.dto'
 import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 import { Roles } from '../../shared/auth/roles.decorator';
 import { RolesGuard } from '../../shared/auth/roles.guard';
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(JwtAuthGuard, PermissionGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('admin')
 @Controller('admin/point-user-balance')
 export class PointUserBalanceAdminController {
   constructor(
@@ -26,11 +29,13 @@ export class PointUserBalanceAdminController {
   ) {}
 
   @Post()
+  @Permission('point-user-balance.create')
   create(@Body() dto: CreatePointUserBalanceDto) {
     return this.pointUserBalanceService.create(dto);
   }
 
   @Get()
+  @Permission('point-user-balance.view')
   findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -40,11 +45,13 @@ export class PointUserBalanceAdminController {
   }
 
   @Get(':id')
+  @Permission('point-user-balance.view')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.pointUserBalanceService.findOne(id);
   }
 
   @Patch(':id')
+  @Permission('point-user-balance.update')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdatePointUserBalanceDto,
@@ -53,6 +60,7 @@ export class PointUserBalanceAdminController {
   }
 
   @Delete(':id')
+  @Permission('point-user-balance.delete')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.pointUserBalanceService.remove(id);
   }

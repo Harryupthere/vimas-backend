@@ -17,9 +17,12 @@ import { UpdateRegistrationTypeDto } from '../dto/update-registration-type.dto';
 import { JwtAuthGuard } from 'src/shared/auth/strategies/auth.guard';
 import { Roles } from 'src/shared/auth/roles.decorator';
 import { RolesGuard } from 'src/shared/auth/roles.guard';
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin') // allows admin OR merchant
+@UseGuards(JwtAuthGuard, PermissionGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('admin') // allows admin OR merchant
 @Controller('admin/registration-types')
 export class RegistrationTypesController {
   constructor(
@@ -27,6 +30,7 @@ export class RegistrationTypesController {
   ) {}
 
   @Post()
+  @Permission('registration-types.create')
   create(@Req() req, @Body() dto: CreateRegistrationTypeDto) {
     return this.registrationTypesService.create(
       dto,
@@ -34,6 +38,7 @@ export class RegistrationTypesController {
   }
 
   @Get()
+  @Permission('registration-types.view')
   findAll(
     @Query('page') pageStr: string = '1',
     @Query('limit') limitStr: string = '10',
@@ -45,11 +50,13 @@ export class RegistrationTypesController {
   }
 
   @Get(':id')
+  @Permission('registration-types.view')
   findOne(@Param('id') id: string) {
     return this.registrationTypesService.findOne(+id);
   }
 
   @Patch(':id')
+  @Permission('registration-types.update')
   update(
     @Req() req,
     @Param('id') id: string,
@@ -63,6 +70,7 @@ export class RegistrationTypesController {
   }
 
   @Delete(':id')
+  @Permission('registration-types.delete')
   remove(@Req() req, @Param('id') id: string) {
     return this.registrationTypesService.remove(
 

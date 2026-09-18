@@ -4,6 +4,7 @@ import { ChangePasswordAdminDto } from './changePassword.dto';
 import { LoginAdminDto } from './login.dto';
 import { RefreshTokenAdminDto } from './refresh-token.dto';
 import { JwtAuthGuard } from '../shared/auth/strategies/auth.guard';
+import { CreateAdminDto } from './create-admin.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -28,4 +29,15 @@ export class AdminController {
   ) {
     return this.adminService.changePassword(req.user.role, changePasswordDto);
   }
+
+  @Post()
+createAdmin(
+  @Req() req,
+  @Body() dto: CreateAdminDto
+) {
+  return this.adminService.createAdmin(
+    req.user.id,
+    dto
+  );
+}
 }

@@ -16,9 +16,12 @@ import { UpdateProductBulkDetailDto } from '../dto/update-product-bulk-detail.dt
 import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 import { Roles } from '../../shared/auth/roles.decorator';
 import { RolesGuard } from '../../shared/auth/roles.guard';
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(JwtAuthGuard, PermissionGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('admin')
 @Controller('admin/product-bulk-details')
 export class ProductBulkDetailsAdminController {
   constructor(
@@ -26,11 +29,13 @@ export class ProductBulkDetailsAdminController {
   ) {}
 
   @Post()
+  @Permission('product-bulk-details.create')
   create(@Body() dto: CreateProductBulkDetailDto) {
     return this.productBulkDetailsService.create(dto);
   }
 
   @Get()
+  @Permission('product-bulk-details.view')
   findAll(
     @Query('productId') productId?: string,
     @Query('status') status?: string,
@@ -44,11 +49,13 @@ export class ProductBulkDetailsAdminController {
   }
 
   @Get(':id')
+  @Permission('product-bulk-details.view')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.productBulkDetailsService.findOne(id);
   }
 
   @Patch(':id')
+  @Permission('product-bulk-details.update')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductBulkDetailDto,
@@ -57,6 +64,7 @@ export class ProductBulkDetailsAdminController {
   }
 
   @Delete(':id')
+  @Permission('product-bulk-details.delete')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.productBulkDetailsService.remove(id);
   }

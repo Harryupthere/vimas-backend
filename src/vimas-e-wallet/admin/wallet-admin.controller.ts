@@ -16,14 +16,18 @@ import { UpdateWalletStatusDto } from '../dto/update-wallet-status.dto';
 import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 import { Roles } from '../../shared/auth/roles.decorator';
 import { RolesGuard } from '../../shared/auth/roles.guard';
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(JwtAuthGuard, PermissionGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('admin')
 @Controller('admin/wallet')
 export class WalletAdminController {
   constructor(private readonly walletService: VimasEWalletService) {}
 
   @Get()
+  @Permission('wallet.view')
   findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -33,11 +37,13 @@ export class WalletAdminController {
   }
 
   @Get(':userId')
+  @Permission('wallet.view')
   getBalance(@Param('userId', ParseIntPipe) userId: number) {
     return this.walletService.getBalance(userId);
   }
 
   @Get(':userId/transactions')
+  @Permission('wallet.view')
   findTransactions(
     @Param('userId', ParseIntPipe) userId: number,
     @Query('page') page: string = '1',
@@ -47,6 +53,7 @@ export class WalletAdminController {
   }
 
   @Patch(':userId/status')
+  @Permission('wallet.update')
   setStatus(
     @Param('userId', ParseIntPipe) userId: number,
     @Body() dto: UpdateWalletStatusDto,
@@ -55,6 +62,7 @@ export class WalletAdminController {
   }
 
   @Post(':userId/credit')
+  @Permission('wallet.credit')
   credit(
     @Param('userId', ParseIntPipe) userId: number,
     @Body() dto: CreditWalletDto,
@@ -63,6 +71,7 @@ export class WalletAdminController {
   }
 
   @Post(':userId/debit')
+  @Permission('wallet.debit')
   debit(
     @Param('userId', ParseIntPipe) userId: number,
     @Body() dto: DebitWalletDto,

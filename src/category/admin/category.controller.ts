@@ -15,14 +15,18 @@ import { JwtAuthGuard } from 'src/shared/auth/strategies/auth.guard';
 import { Roles } from 'src/shared/auth/roles.decorator';
 import { RolesGuard } from 'src/shared/auth/roles.guard';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin') // allows admin OR merchant
+// import { JwtAuthGuard } from 'src/shared/auth/strategies/auth.guard';
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
+@UseGuards(JwtAuthGuard, PermissionGuard)
+
 @Controller('admin')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   // GET categories (with pagination)
   @Get('categories')
+  @Permission('categories.view')
   findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -33,18 +37,21 @@ export class CategoryController {
 
   // GET single category by id
   @Get('category/:id')
+  @Permission('categories.view')
   findOne(@Param('id') id: string) {
     return this.categoryService.findOne(+id);
   }
 
   // CREATE new category
   @Post('category')
+  @Permission('categories.create')
   create(@Body() dto: CreateCategoryDto) {
     return this.categoryService.create(dto);
   }
 
   // UPDATE category
   @Patch('category/:id')
+  @Permission('categories.update')
   update(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
     return this.categoryService.update(+id, dto);
   }

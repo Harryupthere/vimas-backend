@@ -16,9 +16,12 @@ import { UpdateMembershipTypeDto } from '../dto/update-membership-type.dto';
 import { JwtAuthGuard } from 'src/shared/auth/strategies/auth.guard';
 import { Roles } from 'src/shared/auth/roles.decorator';
 import { RolesGuard } from 'src/shared/auth/roles.guard';
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
+@UseGuards(JwtAuthGuard, PermissionGuard)
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('admin')
 @Controller('admin/membership-types')
 export class MembershipTypesController {
   constructor(
@@ -26,6 +29,7 @@ export class MembershipTypesController {
   ) {}
 
   @Post()
+  @Permission('membership-types.create')
   create(@Req() req, @Body() dto: CreateMembershipTypeDto) {
     return this.membershipTypesService.create(
       req.user.role,
@@ -35,6 +39,7 @@ export class MembershipTypesController {
   }
 
   @Get()
+  @Permission('membership-types.view')
   findAll(
     @Query('page') pageStr: string = '1',
     @Query('limit') limitStr: string = '10',
@@ -46,11 +51,13 @@ export class MembershipTypesController {
   }
 
   @Get(':id')
+  @Permission('membership-types.view')
   findOne(@Param('id') id: string) {
     return this.membershipTypesService.findOne(+id);
   }
 
   @Patch(':id')
+  @Permission('membership-types.update')
   update(
     @Req() req,
     @Param('id') id: string,
@@ -65,6 +72,7 @@ export class MembershipTypesController {
   }
 
   @Delete(':id')
+  @Permission('membership-types.delete')
   remove(@Req() req, @Param('id') id: string) {
     return this.membershipTypesService.remove(req.user.role, req.user.id, +id);
   }

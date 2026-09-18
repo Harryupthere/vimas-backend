@@ -2,40 +2,49 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import * as bcrypt from "bcrypt";
-import { Admin } from "../shared/entities/admin.entity";
-import { LoginAdminDto } from "./login.dto";
-import { JwtService } from "@nestjs/jwt";
-import { ChangePasswordAdminDto } from "./changePassword.dto";
-import { RefreshTokenAdminDto } from "./refresh-token.dto";
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { Admin } from '../shared/entities/admin.entity';
+import { LoginAdminDto } from './login.dto';
+import { JwtService } from '@nestjs/jwt';
+import { ChangePasswordAdminDto } from './changePassword.dto';
+import { RefreshTokenAdminDto } from './refresh-token.dto';
+import { Role } from '../shared/entities/role.entity';
+import { AdminRole } from '../shared/entities/admin-role.entity';
+import { CreateAdminDto } from './create-admin.dto';
 @Injectable()
 export class AdminService {
   constructor(
     @InjectRepository(Admin)
     private readonly adminRepo: Repository<Admin>,
-    private readonly jwtService: JwtService
+    @InjectRepository(Role)
+    private readonly roleRepo: Repository<Role>,
+
+    @InjectRepository(AdminRole)
+    private readonly adminRoleRepo: Repository<AdminRole>,
+
+    private readonly jwtService: JwtService,
   ) {}
 
   // signs an access token from the given payload, plus a long-lived refresh
   // token, and persists the refresh token so it can be revoked/rotated later
   private async issueTokens(
     adminId: number,
-    accessPayload: Record<string, any>
+    accessPayload: Record<string, any>,
   ) {
     const access_token = this.jwtService.sign(accessPayload, {
-      secret: process.env.JWT_SECRET || "your_secret_key",
-      expiresIn: "1h",
+      secret: process.env.JWT_SECRET || 'your_secret_key',
+      expiresIn: '1h',
     });
 
     const refresh_token = this.jwtService.sign(
-      { sub_id: adminId, type: "refresh" },
+      { sub_id: adminId, type: 'refresh' },
       {
-        secret: process.env.JWT_REFRESH_SECRET || "your_jwt_refresh_secret",
-        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "30d",
-      }
+        secret: process.env.JWT_REFRESH_SECRET || 'your_jwt_refresh_secret',
+        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
+      },
     );
 
     await this.adminRepo.update(adminId, { refresh_token });
@@ -45,46 +54,50 @@ export class AdminService {
 
   async changePassword(
     role: string,
-    changePasswordDto: ChangePasswordAdminDto
+    changePasswordDto: ChangePasswordAdminDto,
   ): Promise<any> {
-    if (role !== "admin") {
-      throw new UnauthorizedException("Only admins can change password");
+    if (role !== 'admin') {
+      throw new UnauthorizedException('Only admins can change password');
     }
     const admin = await this.adminRepo.findOne({ where: { id: 1 } });
-    if (!admin) throw new NotFoundException("Admin not found");
+    if (!admin) throw new NotFoundException('Admin not found');
 
     const isPasswordValid = await bcrypt.compare(
       changePasswordDto.oldPassword,
-      admin.password
+      admin.password,
     );
     if (!isPasswordValid)
-      throw new UnauthorizedException("Invalid credentials");
+      throw new UnauthorizedException('Invalid credentials');
 
     admin.password = await bcrypt.hash(changePasswordDto.newPassword, 10);
     await this.adminRepo.save(admin);
-    return { message: "Password changed successfully" };
+    return { message: 'Password changed successfully' };
   }
 
   async findByUsername(username: string): Promise<any> {
-    console.log("Finding admin by username:", username);
+    console.log('Finding admin by username:', username);
     return this.adminRepo.findOne({ where: { username } });
   }
 
   async validateLogin(loginDto: LoginAdminDto): Promise<any> {
     const admin = await this.findByUsername(loginDto.username);
-    if (!admin) throw new NotFoundException("Admin not found");
+    if (!admin) throw new NotFoundException('Admin not found');
 
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
-      admin.password
+      admin.password,
     );
     if (!isPasswordValid)
-      throw new UnauthorizedException("Invalid credentials");
-    const payload = { username: admin.username, sub_id: admin.id, role: "admin" };
+      throw new UnauthorizedException('Invalid credentials');
+    const payload = {
+      username: admin.username,
+      sub_id: admin.id,
+      role: 'admin',
+    };
 
     const { access_token, refresh_token } = await this.issueTokens(
       admin.id,
-      payload
+      payload,
     );
 
     return {
@@ -93,7 +106,7 @@ export class AdminService {
         refresh_token,
         user: admin.username,
       },
-      message: "Login successful",
+      message: 'Login successful',
     };
   }
 
@@ -104,14 +117,14 @@ export class AdminService {
     let decoded: any;
     try {
       decoded = this.jwtService.verify(dto.refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET || "your_jwt_refresh_secret",
+        secret: process.env.JWT_REFRESH_SECRET || 'your_jwt_refresh_secret',
       });
     } catch {
-      throw new UnauthorizedException("Invalid or expired refresh token");
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    if (decoded.type !== "refresh" || !decoded.sub_id) {
-      throw new UnauthorizedException("Invalid refresh token");
+    if (decoded.type !== 'refresh' || !decoded.sub_id) {
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
     const admin = await this.adminRepo.findOne({
@@ -123,20 +136,78 @@ export class AdminService {
       !admin.refresh_token ||
       admin.refresh_token !== dto.refreshToken
     ) {
-      throw new UnauthorizedException("Refresh token has been revoked");
+      throw new UnauthorizedException('Refresh token has been revoked');
     }
 
     const payload = {
       username: admin.username,
       sub_id: admin.id,
-      role: "admin",
+      role: 'admin',
     };
 
     const tokens = await this.issueTokens(admin.id, payload);
 
     return {
       data: tokens,
-      message: "Token refreshed successfully",
+      message: 'Token refreshed successfully',
+    };
+  }
+
+  async createAdmin(currentAdminId: number, dto: CreateAdminDto): Promise<any> {
+    // 1. Check if username/email already exists
+    const existingAdmin = await this.adminRepo.findOne({
+      where: { username: dto.username },
+    });
+
+    if (existingAdmin) {
+      throw new UnauthorizedException(
+        'Admin with this username already exists',
+      );
+    }
+
+    // 2. Verify requested role exists and is active
+    const role = await this.roleRepo.findOne({
+      where: {
+        id: dto.adminRoleId,
+        is_active: true,
+      },
+    });
+
+    if (!role) {
+      throw new NotFoundException('Admin role not found or inactive');
+    }
+
+    // 3. Hash password
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    // 4. Create admin
+    const admin = this.adminRepo.create({
+      username: dto.username,
+      password: hashedPassword,
+      refresh_token: null,
+    });
+
+    const savedAdmin = await this.adminRepo.save(admin);
+
+    // 5. Assign role
+    const adminRole = this.adminRoleRepo.create({
+      admin_id: savedAdmin.id,
+      role_id: role.id,
+    });
+
+    await this.adminRoleRepo.save(adminRole);
+
+    return {
+      data: {
+        id: savedAdmin.id,
+        username: savedAdmin.username,
+        role: {
+          id: role.id,
+          name: role.name,
+          slug: role.slug,
+        },
+      },
+      message: 'Admin created successfully',
     };
   }
 }

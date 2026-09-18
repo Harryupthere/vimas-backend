@@ -15,9 +15,12 @@ import { ProductFeedbackStatus } from '../../shared/entities/product-feedback.en
 import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 import { Roles } from '../../shared/auth/roles.decorator';
 import { RolesGuard } from '../../shared/auth/roles.guard';
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(JwtAuthGuard, PermissionGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('admin')
 @Controller('admin/product-feedback')
 export class ProductFeedbackAdminController {
   constructor(
@@ -25,6 +28,7 @@ export class ProductFeedbackAdminController {
   ) {}
 
   @Get()
+  @Permission('product-feedback.view')
   findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -40,11 +44,13 @@ export class ProductFeedbackAdminController {
   }
 
   @Get(':id')
+  @Permission('product-feedback.view')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.productFeedbackService.findOne(id);
   }
 
   @Patch(':id/status')
+  @Permission('product-feedback.update')
   setStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: SetFeedbackStatusDto,
@@ -53,6 +59,7 @@ export class ProductFeedbackAdminController {
   }
 
   @Delete(':id')
+  @Permission('product-feedback.delete')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.productFeedbackService.adminRemove(id);
   }

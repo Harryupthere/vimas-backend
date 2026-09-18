@@ -12,14 +12,18 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { JwtAuthGuard } from 'src/shared/auth/strategies/auth.guard';
 import { Roles } from 'src/shared/auth/roles.decorator';
 import { RolesGuard } from 'src/shared/auth/roles.guard';
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin') // allows admin OR merchant
+@UseGuards(JwtAuthGuard, PermissionGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('admin') // allows admin OR merchant
 @Controller('admin')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('users') // GET users
+  @Permission('users.view')
   findAll(
     @Query('page') pageStr: string = '1', // default page 1
     @Query('limit') limitStr: string = '10', // default 10 items per page
@@ -33,11 +37,13 @@ export class UsersController {
   }
 
   @Get('user/:id') // GET user/:id
+  @Permission('users.view')
   findOne(@Param('id') id: number) {
     return this.usersService.findOne(id);
   }
 
   @Patch('user/:id') // PATCH user/:id
+  @Permission('users.update')
   update(@Param('id') id: string, @Body() userUpdate: UpdateUserDto) {
     return this.usersService.update(+id, userUpdate);
   }

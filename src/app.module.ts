@@ -56,6 +56,12 @@ import { SearchModule } from './search/search.module';
 import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
+import { RoleModule } from './roles/role.module';
+import { PermissionModule } from './permission/permission.module';
+import { AdminRoleModule } from './admin-role/admin-role.module';
+import { RolePermissionModule } from './role-permission/role-permission.module';
+import { AuthModule } from './shared/auth/auth.module';
+import { AdminMenuModule } from './admin-menu/admin-menu.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -138,6 +144,12 @@ import { ScheduleModule } from '@nestjs/schedule';
     ProductDiscountsModule,
     VimasEWalletModule,
     SearchModule,
+    RoleModule,
+    PermissionModule,
+    AdminRoleModule,
+    RolePermissionModule,
+    AuthModule,
+    AdminMenuModule
   ],
   controllers: [AppController],
   providers: [AppService],

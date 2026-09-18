@@ -17,19 +17,24 @@ import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 import { Roles } from '../../shared/auth/roles.decorator';
 import { RolesGuard } from '../../shared/auth/roles.guard';
 import { ProductType } from '../../shared/enums/product-type.enum';
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(JwtAuthGuard, PermissionGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('admin')
 @Controller('admin/product-coupons')
 export class ProductCouponsAdminController {
   constructor(private readonly productCouponsService: ProductCouponsService) {}
 
   @Post()
+  @Permission('product-coupons.create')
   create(@Body() dto: CreateProductCouponDto) {
     return this.productCouponsService.create(dto);
   }
 
   @Get()
+  @Permission('product-coupons.view')
   findAll(
     @Query('productId') productId?: string,
     @Query('productType') productType?: ProductType,
@@ -45,11 +50,13 @@ export class ProductCouponsAdminController {
   }
 
   @Get(':id')
+  @Permission('product-coupons.view')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.productCouponsService.findOne(id);
   }
 
   @Patch(':id')
+  @Permission('product-coupons.update')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductCouponDto,
@@ -58,6 +65,7 @@ export class ProductCouponsAdminController {
   }
 
   @Delete(':id')
+  @Permission('product-coupons.delete')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.productCouponsService.remove(id);
   }

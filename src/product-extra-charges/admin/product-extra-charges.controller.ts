@@ -17,9 +17,12 @@ import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 import { Roles } from '../../shared/auth/roles.decorator';
 import { RolesGuard } from '../../shared/auth/roles.guard';
 import { ProductType } from '../../shared/enums/product-type.enum';
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(JwtAuthGuard, PermissionGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('admin')
 @Controller('admin/product-extra-charges')
 export class ProductExtraChargesAdminController {
   constructor(
@@ -27,11 +30,13 @@ export class ProductExtraChargesAdminController {
   ) {}
 
   @Post()
+  @Permission('product-extra-charges.create')
   create(@Body() dto: CreateProductExtraChargeDto) {
     return this.productExtraChargesService.create(dto);
   }
 
   @Get()
+  @Permission('product-extra-charges.view')
   findAll(
     @Query('productId') productId?: string,
     @Query('productType') productType?: ProductType,
@@ -49,11 +54,13 @@ export class ProductExtraChargesAdminController {
   }
 
   @Get(':id')
+  @Permission('product-extra-charges.view')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.productExtraChargesService.findOne(id);
   }
 
   @Patch(':id')
+  @Permission('product-extra-charges.update')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductExtraChargeDto,
@@ -62,6 +69,7 @@ export class ProductExtraChargesAdminController {
   }
 
   @Delete(':id')
+  @Permission('product-extra-charges.delete')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.productExtraChargesService.remove(id);
   }

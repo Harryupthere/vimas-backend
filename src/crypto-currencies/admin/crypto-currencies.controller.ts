@@ -17,8 +17,11 @@ import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 import { Roles } from '../../shared/auth/roles.decorator';
 import { RolesGuard } from '../../shared/auth/roles.guard';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('admin')
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
+@UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('admin/crypto-currencies')
 export class CryptoCurrenciesAdminController {
   constructor(
@@ -26,11 +29,13 @@ export class CryptoCurrenciesAdminController {
   ) {}
 
   @Post()
+  @Permission('crypto-currencies.create')
   create(@Body() dto: CreateCryptoCurrencyDto) {
     return this.cryptoCurrenciesService.create(dto);
   }
 
   @Get()
+  @Permission('crypto-currencies.view')
   findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -40,11 +45,13 @@ export class CryptoCurrenciesAdminController {
   }
 
   @Get(':id')
+  @Permission('crypto-currencies.view')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.cryptoCurrenciesService.findOne(id);
   }
 
   @Patch(':id')
+  @Permission('crypto-currencies.update')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCryptoCurrencyDto,
@@ -53,6 +60,7 @@ export class CryptoCurrenciesAdminController {
   }
 
   @Delete(':id')
+  @Permission('crypto-currencies.delete')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.cryptoCurrenciesService.remove(id);
   }

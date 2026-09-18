@@ -16,9 +16,12 @@ import { UpdateRewardMallCategoryDto } from '../dto/update-reward-mall-category.
 import { JwtAuthGuard } from '../../shared/auth/strategies/auth.guard';
 import { Roles } from '../../shared/auth/roles.decorator';
 import { RolesGuard } from '../../shared/auth/roles.guard';
+import { PermissionGuard } from 'src/shared/auth/guards/permission.guard';
+import { Permission } from 'src/shared/auth/decorators/permission.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(JwtAuthGuard, PermissionGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('admin')
 @Controller('admin/reward-mall-categories')
 export class RewardMallCategoriesAdminController {
   constructor(
@@ -26,11 +29,13 @@ export class RewardMallCategoriesAdminController {
   ) {}
 
   @Post()
+  @Permission('reward-mall-categories.create')
   create(@Body() dto: CreateRewardMallCategoryDto) {
     return this.rewardMallCategoriesService.create(dto);
   }
 
   @Get()
+  @Permission('reward-mall-categories.view')
   findAll(@Query('status') status?: string, @Query('search') search?: string) {
     return this.rewardMallCategoriesService.findAll(
       status !== undefined ? +status : undefined,
@@ -39,11 +44,13 @@ export class RewardMallCategoriesAdminController {
   }
 
   @Get(':id')
+  @Permission('reward-mall-categories.view')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.rewardMallCategoriesService.findOne(id);
   }
 
   @Patch(':id')
+  @Permission('reward-mall-categories.update')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateRewardMallCategoryDto,
@@ -52,6 +59,7 @@ export class RewardMallCategoriesAdminController {
   }
 
   @Delete(':id')
+  @Permission('reward-mall-categories.delete')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.rewardMallCategoriesService.remove(id);
   }
