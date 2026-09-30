@@ -866,8 +866,13 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    Object.assign(user, dto); // only the allowed fields from dto will update
+    // Hash password only when admin provides a new password
+  if (dto.password) {
+    dto.password = await bcrypt.hash(dto.password, 10);
+  }
 
+    Object.assign(user, dto); // only the allowed fields from dto will update
+  await this.userRepo.save(user);
     return { message: 'User updated' };
   }
 
