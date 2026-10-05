@@ -470,7 +470,7 @@ export class OrdersService {
           metadata: { orderIds: orderIds.join(',') },
         },
         success_url: `${appUrl}dashboard/confirm?checkout=success&checkout_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${appUrl}/dashboard/failed?checkout_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${appUrl}dashboard/failed?checkout_id={CHECKOUT_SESSION_ID}`,
       });
     } catch (err) {
       await this.orderRepo.delete({ id: In(orderIds) });
@@ -571,10 +571,10 @@ export class OrdersService {
         breakdown: { subtotal: finalAmount },
         total: finalAmount,
       },
-      // successUrl: `${appUrl}dashboard/confirm?checkout=success&checkout_id=${invoiceId}`,
-      // cancelUrl: `${appUrl}dashboard/failed?checkout=cancel&checkout_id=${invoiceId}`,
-      successUrl: `https://vimasgv.com/dashboard/confirm?checkout=success&checkout_id=${invoiceId}`,
-       cancelUrl: `https://vimasgv.com/dashboard/failed?checkout=cancel&checkout_id=${invoiceId}`,
+      successUrl: `${appUrl}dashboard/confirm?checkout=success&checkout_id=${invoiceId}`,
+      cancelUrl: `${appUrl}dashboard/failed?checkout=cancel&checkout_id=${invoiceId}`,
+      // successUrl: `https://vimasgv.com/dashboard/confirm?checkout=success&checkout_id=${invoiceId}`,
+      //  cancelUrl: `https://vimasgv.com/dashboard/failed?checkout=cancel&checkout_id=${invoiceId}`,
       webhooks: [
         {
           notificationsUrl: webhookUrl,

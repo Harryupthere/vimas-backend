@@ -759,7 +759,7 @@ export class UsersService {
       );
 
       // build URL for frontend
-      const verifyUrl = `${process.env.APP_URL}/auth/verify-email?token=${token}`;
+      const verifyUrl = `${process.env.APP_URL}auth/verify-email?token=${token}`;
 
       // TODO: send email using your mailer service
       console.log('Send email verification link:', verifyUrl);
@@ -930,7 +930,7 @@ export class UsersService {
       },
     );
 
-    const resetUrl = `${process.env.APP_URL}/auth/reset-password?token=${token}`;
+    const resetUrl = `${process.env.APP_URL}auth/reset-password?token=${token}`;
 
     // Dummy email: console the link since no mailer is configured
     console.log('Password reset link (console-only):', resetUrl);

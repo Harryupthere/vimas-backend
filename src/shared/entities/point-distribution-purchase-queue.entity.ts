@@ -29,6 +29,7 @@ export enum PointDistributionPurchaseQueueStage {
   BUY_REWARD = 'buyer_reward',
   UPLINE_LEVEL_1 = 'level1_reward',
   UPLINE_LEVEL_2 = 'level2_reward',
+  UPLINE_LEVEL_3 = 'level3_reward',
   POOL_REWARD = 'pool_reward',
   COMPLETED = 'completed',
 }

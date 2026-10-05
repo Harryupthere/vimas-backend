@@ -22,6 +22,7 @@ export enum PointReceiverType {
   MERCHANT = 'MERCHANT',
   UPLINE_LEVEL_1 = 'UPLINE_LEVEL_1',
   UPLINE_LEVEL_2 = 'UPLINE_LEVEL_2',
+  UPLINE_LEVEL_3 = 'UPLINE_LEVEL_3',
   POOL = 'POOL',
   ADMIN = 'ADMIN',
 }

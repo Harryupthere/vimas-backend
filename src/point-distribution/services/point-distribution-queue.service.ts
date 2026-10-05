@@ -43,6 +43,7 @@ const STAGE_ORDER: PointDistributionPurchaseQueueStage[] = [
   PointDistributionPurchaseQueueStage.BUY_REWARD,
   PointDistributionPurchaseQueueStage.UPLINE_LEVEL_1,
   PointDistributionPurchaseQueueStage.UPLINE_LEVEL_2,
+  PointDistributionPurchaseQueueStage.UPLINE_LEVEL_3,
   PointDistributionPurchaseQueueStage.POOL_REWARD,
   PointDistributionPurchaseQueueStage.COMPLETED,
 ];
@@ -54,6 +55,8 @@ const UPLINE_STAGE_BY_RECEIVER: Partial<
     PointDistributionPurchaseQueueStage.UPLINE_LEVEL_1,
   [PointReceiverType.UPLINE_LEVEL_2]:
     PointDistributionPurchaseQueueStage.UPLINE_LEVEL_2,
+  [PointReceiverType.UPLINE_LEVEL_3]:
+    PointDistributionPurchaseQueueStage.UPLINE_LEVEL_3,
 };
 
 @Injectable()
@@ -142,14 +145,33 @@ export class PointDistributionQueueService {
       const poolRule = activeRules.find(
         (r) => r.receiverType === PointReceiverType.POOL,
       );
+
       // Currently only 2 upline levels are modelled (UPLINE_LEVEL_1/_2 on
       // both the distribution rule's receiver_type and the queue's stage
       // enum); sorted explicitly so level 1 always credits before level 2
       // regardless of DB row order.
+      // const uplineRules = activeRules
+      //   .filter((r) => r.receiverType in UPLINE_STAGE_BY_RECEIVER)
+      //   .sort((a) =>
+      //     a.receiverType === PointReceiverType.UPLINE_LEVEL_1 ? -1 : 1,
+      //   );
+
+      // Active upline rules are resolved dynamically from the configured
+      // point distributions. The rules are explicitly sorted by level so
+      // Level 1 always processes before Level 2 and Level 3, regardless
+      // of the order returned by the database.
+
+      const UPLINE_PRIORITY: Record<string, number> = {
+        [PointReceiverType.UPLINE_LEVEL_1]: 1,
+        [PointReceiverType.UPLINE_LEVEL_2]: 2,
+        [PointReceiverType.UPLINE_LEVEL_3]: 3,
+      };
+
       const uplineRules = activeRules
         .filter((r) => r.receiverType in UPLINE_STAGE_BY_RECEIVER)
-        .sort((a) =>
-          a.receiverType === PointReceiverType.UPLINE_LEVEL_1 ? -1 : 1,
+        .sort(
+          (a, b) =>
+            UPLINE_PRIORITY[a.receiverType] - UPLINE_PRIORITY[b.receiverType],
         );
 
       this.logger.debug(
